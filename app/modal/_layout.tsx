@@ -17,6 +17,9 @@ export default function listingLayout() {
   return (
     <Stack>
     <Stack.Screen name="help-and-support" options={{ headerShown: false }} />          
+    <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />          
+    <Stack.Screen name="terms-and-conditions" options={{ headerShown: false }} />          
+    <Stack.Screen name="edit-profile" options={{ headerShown: false }} />          
     {/* <Stack.Screen name="[id]" options={{ headerShown: false }} />           */}
  
                

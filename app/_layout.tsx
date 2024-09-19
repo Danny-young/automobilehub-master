@@ -47,7 +47,10 @@ import AuthProvider from '@/providers/AuthProvider'
           presentation: 'modal'
         }} 
       />
-    </Stack>
+     
+    
+   
+     </Stack>
   );
   };
   

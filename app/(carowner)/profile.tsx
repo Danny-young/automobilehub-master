@@ -34,44 +34,91 @@ export default function Profile() {
 	};
   
 	const navigateToHelpAndSupport = () => {
-		router.push('/modal/help-and-support');
+		router.push('/modal/help-and-support' as never);
+	};
+
+	const navigateToPrivacyPolicy = () => {
+		router.push('/modal/privacy-policy' as never);
+	};
+	const navigateToTermsandCondition = () => {
+		router.push('/modal/terms-and-conditions' as never); // Note: Changed from 'condition' to 'conditions'
+	};
+
+	const navigateToEditProfile = () => {
+		router.push('/modal/edit-profile' as never);
+	};
+
+	const navigateToMyCars = () => {
+		router.push('/modal/my-cars' as never);
+	};
+
+	const navigateToLanguageSelection = () => {
+		router.push('/modal/language-selection' as never);
+	};
+
+	const navigateToFavorites = () => {
+		router.push('/modal/favorites' as never);
 	};
 
 	return (
 		<View style={[styles.container, { paddingTop: top }]}>
 			<Text style={styles.title}>Profile</Text>
 
-			{user && (
-				<View style={styles.userInfo}>
-					<Image
-						source={{ uri: user.user_metadata?.avatar_url || 'https://via.placeholder.com/150' }}
-						style={styles.avatar}
-					/>
-					<View style={styles.userDetails}>
-						<Text style={styles.username}>{user.user_metadata?.full_name || 'User'}</Text>
-						<Text style={styles.email}>{user.email}</Text>
+				{user && (
+					<View style={styles.userInfo}>
+						<Image
+							source={{ uri: user.user_metadata?.avatar_url || 'https://via.placeholder.com/150' }}
+							style={styles.avatar}
+						/>
+						<View style={styles.userDetails}>
+							<Text style={styles.username}>{user.user_metadata?.full_name || 'User'}</Text>
+							<Text style={styles.email}>{user.email}</Text>
+						</View>
 					</View>
-				</View>
-			)}
+				)}
 
-			<Settings name='Edit' color='black' iconName='user' size={22} vectorName='FontAwesome5'/>
-			<Settings name='Favorite' color='black' iconName='favorite' size={22} vectorName='MaterialIcons'/>
-			<Settings name='My car' color='black' iconName='car' size={22} vectorName='FontAwesome5'/>
-			<Settings name='Language' color='black' iconName='language' size={22} vectorName='FontAwesome5'/>
-			<Settings name='Terms and Condition' color='black' iconName='book' size={22} vectorName='FontAwesome5'/>
-			<Settings name='Privacy policy' color='black' iconName='policy' size={22} vectorName='MaterialIcons'/>
-			<Settings 
-				name='Help and support' 
-				color='black' 
-				iconName='help-circle-sharp' 
-				size={26} 
-				vectorName='Ionicons' 
-				onPress={navigateToHelpAndSupport}
-			/>
+        <Settings 
+					name='Edit Profile' 
+					color='black' 
+					iconName='user-edit' 
+					size={22} 
+					vectorName='FontAwesome5'
+					onPress={navigateToEditProfile}
+				/>
+				<Settings name='Favorite' color='black' iconName='favorite' size={22} vectorName='MaterialIcons' onPress={navigateToFavorites}/>
+        <Settings 
+					name='My Cars' 
+					color='black' 
+					iconName='car' 
+					size={22} 
+					vectorName='FontAwesome5'
+					onPress={navigateToMyCars}
+				/>
+        
+				<Settings name='Language' color='black' iconName='language' size={22} vectorName='FontAwesome5' onPress={navigateToLanguageSelection}/>
+				<Settings name='Terms and Condition' color='black' iconName='book' size={22} vectorName='FontAwesome5' onPress={navigateToTermsandCondition}/>
+				<Settings 
+					name='Help and support' 
+					color='black' 
+					iconName='help-circle-sharp' 
+					size={26} 
+					vectorName='Ionicons' 
+					onPress={navigateToHelpAndSupport}
+				/>
+				<Settings 
+					name='Privacy policy' 
+					color='black' 
+					iconName='policy' 
+					size={22} 
+					vectorName='MaterialIcons'
+					onPress={navigateToPrivacyPolicy}
+				/>
 			
-			<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-				<Text style={styles.logoutText}>Logout</Text>
-			</TouchableOpacity>
+		
+				
+				<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+					<Text style={styles.logoutText}>Logout</Text>
+				</TouchableOpacity>
 		</View>
 	)
 }
