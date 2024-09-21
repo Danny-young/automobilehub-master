@@ -145,7 +145,7 @@ const BookingSection = () => {
                     )}
                 />
             )}
-
+{/* 
             <TouchableOpacity
                 style={[
                     styles.bookButton,
@@ -155,7 +155,7 @@ const BookingSection = () => {
                 disabled={!selectedDate || !selectedTime || !selectedService}
             >
                 <Text style={styles.bookButtonText}>Book Appointment</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
         </ScrollView>
     );
 };
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        padding: 20,
+        // padding: 20,
     },
     sectionTitle: {
         fontSize: 24,

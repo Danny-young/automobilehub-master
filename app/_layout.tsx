@@ -32,38 +32,31 @@ import AuthProvider from '@/providers/AuthProvider'
     const router = useRouter();
     
     return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(carowner)" options={{ headerShown: false }} />
-      <Stack.Screen name="(serviceProvider)" options={{ headerShown: false }} />
-      <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="listing" options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="modal" 
-        options={{ 
-          headerShown: false,
-          presentation: 'modal'
-        }} 
-      />
-     
-    
-   
-     </Stack>
-  );
+              <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(carowner)" options={{ headerShown: false,  }} />
+            <Stack.Screen name="(serviceProvider)" options={{ headerShown: false }} />
+            <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="listing" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ headerShown: false }} />
+  
+            {/* <Stack.Screen name="+not-found" /> */}
+          </Stack>
+         );
   };
   
   
   
   const RootLayout = () => {
     return (     
-    <AuthProvider>
-      <QueryProvider>
+        <AuthProvider>
+       <QueryProvider>
         <InitialLayout />
-      </QueryProvider>
-    </AuthProvider>   
-  );
+        </QueryProvider>
+        </AuthProvider>   
+    );
   };
   
   export default RootLayout;

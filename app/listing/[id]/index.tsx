@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ActivityIndicator, Image, Dimensions, TouchableOpacity, Share } from 'react-native';
 import React, { useLayoutEffect } from 'react';
-import { Link, Stack, useLocalSearchParams, useNavigation } from 'expo-router';
+import { Link, Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useService } from '@/api/service_providers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { defaultPizzaImage } from '@/components/Listings/serviceItemList';
@@ -22,8 +22,8 @@ const Page = () => {
   const { top } = useSafeAreaInsets();
   const { id: idString } = useLocalSearchParams();
   const navigation = useNavigation();
-//   const id = parseFloat(typeof idString === 'string' ? idString : idString[0]);
-const id = parseFloat(Array.isArray(idString) ? idString[0] : idString);
+  const router = useRouter();
+  const id = parseFloat(Array.isArray(idString) ? idString[0] : idString);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
   const { data: services, error, isLoading } = useService(id);
@@ -83,6 +83,13 @@ const id = parseFloat(Array.isArray(idString) ? idString[0] : idString);
   });
 
 
+  const handleAppointmentPress = () => {
+    router.push({
+      pathname: '/modal/booking',
+      params: { serviceId: id }
+    });
+  };
+
   return (
        <View style={styles.container}>
       <Animated.ScrollView
@@ -133,7 +140,10 @@ const id = parseFloat(Array.isArray(idString) ? idString[0] : idString);
             <Text style={styles.footerPrice}>Ghc{services.price}</Text>
             </TouchableOpacity>
           
-          <TouchableOpacity style={[defaultStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}>
+          <TouchableOpacity 
+            style={[defaultStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}
+            onPress={handleAppointmentPress}
+          >
             <Text style={defaultStyles.btnText}>Appointment</Text>
           </TouchableOpacity>
           
@@ -233,4 +243,3 @@ const styles = StyleSheet.create({
       fontFamily: 'mon',
     },
   });
-  
