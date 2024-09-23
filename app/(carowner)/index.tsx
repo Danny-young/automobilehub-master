@@ -8,14 +8,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function CarOwnerHome() {
   const { top } = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState('All Service');
+  const [searchQuery, setSearchQuery] = useState('');
   const { data: allServices, isLoading, error } = useServices();
 
   const filteredServices = allServices?.filter(service => 
-    selectedCategory === 'All Service' || service.category === selectedCategory
+    (selectedCategory === 'All Service' || service.category === selectedCategory) &&
+    (service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     service.User_Business?.business_name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
   if (isLoading) {
@@ -28,7 +35,7 @@ export default function CarOwnerHome() {
 
   return (
     <View style={{ flex: 1, paddingTop: top }}>
-      <ExploreHeader onCategoryChanged={handleCategoryChange} />
+      <ExploreHeader onCategoryChanged={handleCategoryChange} onSearch={handleSearch} />
       <FlatList
         data={filteredServices}
         keyExtractor={(item) => item.id.toString()}

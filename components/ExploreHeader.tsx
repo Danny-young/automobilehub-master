@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput } from 'react-native'
 import React, { useRef, useState } from 'react'
 import { Link } from 'expo-router';
 import { TabBarIcon } from './navigation/TabBarIcon';
@@ -37,13 +37,14 @@ const categories = [
 
 interface Props {
   onCategoryChanged: (category: string) => void;
+  onSearch: (query: string) => void;
 }
 
-
-const ExploreHeader = ({ onCategoryChanged }: Props) => {
+const ExploreHeader = ({ onCategoryChanged, onSearch }: Props) => {
 const scrollRef = useRef<ScrollView>(null);
   const itemRef = useRef<Array<TouchableOpacity | null >>([]) ;
   const [activeIndex, setActiveIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const selectCategory = (index: number) => {
   const selected = itemRef.current[index];
@@ -56,23 +57,23 @@ const scrollRef = useRef<ScrollView>(null);
   onCategoryChanged(categories[index].name);
 };
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    onSearch(query);
+  };
+
   return (
     <SafeAreaView>
 
       <View style={styles.container}>
         <View style={styles.actionRow}>
-        <Link href={'/(modals)/booking'} asChild>
-        <TouchableOpacity style={styles.searchBtn}>
-        <TabBarIcon name={"search"} />
-            <View>
-              <Text style={{fontFamily: 'SpaceMono'}}>
-                Search 
-              </Text>
-            </View>
-        </TouchableOpacity>
-        
-        </Link>
-        
+        {/* <Link href={'/(modals)/booking'} asChild> */}
+        <TextInput
+            style={styles.searchInput}
+            placeholder="Search services..."
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
         <TouchableOpacity style={styles.filterBtn}>
         <TabBarIcon name={"microphone"} />
         </TouchableOpacity>
@@ -127,17 +128,13 @@ const scrollRef = useRef<ScrollView>(null);
      borderColor: 'grey',
      borderRadius:24,
    },
-   searchBtn: {
-      flexDirection: 'row',
-      alignItems:'center',
-      gap:10,
-      borderWidth: StyleSheet.hairlineWidth,
-      flex:1,
-      padding:14,
+   searchInput: {
+      flex: 1,
+      padding: 14,
       borderRadius: 30,
       backgroundColor: '#fff',
-
-      elevation:2,
+      borderWidth: StyleSheet.hairlineWidth,
+      elevation: 2,
       shadowColor: '#000',
       shadowOpacity: 0.12,
       shadowRadius: 8,
