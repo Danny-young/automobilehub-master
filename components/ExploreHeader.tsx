@@ -13,11 +13,11 @@ const categories = [
   },
 
   {
-    name:"Car wash",
+    name:"Car Wash",
     icon: "car-wash"
   },
   {
-    name:"Repairs",
+    name:"Car repairs",
     icon: "car-wrench"
   },
   {
@@ -53,7 +53,7 @@ const scrollRef = useRef<ScrollView>(null);
   });
 
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  onCategoryChanged(categories[index].name)
+  onCategoryChanged(categories[index].name);
 };
 
   return (
