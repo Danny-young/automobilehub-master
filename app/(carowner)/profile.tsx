@@ -6,22 +6,54 @@ import Settings from '@/components/userSettings';
 import { supabase } from '@/lib/supabase';
 import { Redirect, router } from 'expo-router';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Profile() {
 	const { top } = useSafeAreaInsets();
 	const [user, setUser] = useState<any>(null);
 	const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [avatar, setAvatar] = useState<string | null>(null);
+	const [loading, setLoading] = useState<boolean>(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
-	useEffect(() => {
-		fetchUser();
-	}, []);
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem('userId');
+        if (storedUserId) {
+          setUserId(storedUserId);
+          await fetchUserProfile(storedUserId); // Fetch the user profile once userId is available
+        }
+      } catch (error) {
+        console.error('Failed to fetch userId from AsyncStorage:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserId();
+  }, []);
+console.log(userId)
 
-	const fetchUser = async () => {
-		const { data: { user } } = await supabase.auth.getUser();
-		if (user) {
-			setUser(user);
-		}
-	};
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users') // assuming you have a 'profiles' table
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      setName(data?.name || '');
+      setEmail(data?.email || '');
+       setAvatar(data?.profileImage || null);
+    } catch (error) {
+      console.error('Error fetching profile:', error?.message);
+    }
+  };
 
 	const handleLogout = async () => {
 		const { error } = await supabase.auth.signOut();
@@ -64,18 +96,19 @@ export default function Profile() {
 		<View style={[styles.container, { paddingTop: top }]}>
 			<Text style={styles.title}>Profile</Text>
 
-				{user && (
-					<View style={styles.userInfo}>
-						<Image
-							source={{ uri: user.user_metadata?.avatar_url || 'https://via.placeholder.com/150' }}
-							style={styles.avatar}
-						/>
-						<View style={styles.userDetails}>
-							<Text style={styles.username}>{user.user_metadata?.full_name || 'User'}</Text>
-							<Text style={styles.email}>{user.email}</Text>
-						</View>
-					</View>
-				)}
+      {userId && (
+  <View style={styles.userInfo}>
+    <Image
+      source={{ uri: avatar || 'https://via.placeholder.com/150' }}
+      style={styles.avatar}
+    />
+    <View style={styles.userDetails}>
+      <Text style={styles.username}>{name || 'User'}</Text>
+      <Text style={styles.email}>{email}</Text>
+    </View>
+  </View>
+)}
+
 
         <Settings 
 					name='Edit Profile' 

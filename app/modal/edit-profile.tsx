@@ -1,51 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
+import { useUser } from '@/api/service_providers';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function EditProfileScreen() {
-  const [user, setUser] = useState<any>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
   const router = useRouter();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUser();
+    const fetchUserId = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem('userId');
+        if (storedUserId) {
+          setUserId(storedUserId);
+          await fetchUserProfile(storedUserId); // Fetch the user profile once userId is available
+        }
+      } catch (error) {
+        console.error('Failed to fetch userId from AsyncStorage:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserId();
   }, []);
 
-  const fetchUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUser(user);
-      setName(user.user_metadata?.full_name || '');
-      setEmail(user.email || '');
-      setPhone(user.user_metadata?.phone || '');
-      setAddress(user.user_metadata?.address || '');
-      setAvatar(user.user_metadata?.avatar_url || null);
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users') // assuming you have a 'profiles' table
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      setName(data?.name || '');
+      setEmail(data?.email || '');
+      setPhone(data?.phone_number || '');
+      setAddress(data?.address || '');
+      setAvatar(data?.profileImage || null);
+    } catch (error) {
+      console.error('Error fetching profile:', error?.message);
     }
   };
 
   const handleUpdateProfile = async () => {
-    const { data, error } = await supabase.auth.updateUser({
-      email: email,
-      data: {
-        full_name: name,
-        phone: phone,
-        address: address,
-        avatar_url: avatar,
-      }
-    });
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: name,
+          email: email,
+          phone_number: phone,
+          address: address,
+          profileImage:  avatar,
+        })
+        .eq('id', userId ?? '');
 
-    if (error) {
-      console.error('Error updating profile:', error.message);
-    } else {
+      if (error) throw error;
       console.log('Profile updated successfully');
       router.back();
+    } catch (error) {
+      console.error('Error updating profile:', error.message);
     }
   };
 
@@ -58,11 +85,15 @@ export default function EditProfileScreen() {
     });
 
     if (!result.canceled) {
-      setAvatar(result.assets[0].uri);
-      // Here you would typically upload the image to your storage and get a URL
-      // Then update the avatar state with the URL
+      const selectedImageUri = result.assets[0].uri;
+      // Upload the image to your storage and get the URL, then:
+      setAvatar(selectedImageUri); // Assuming the image URL is obtained from storage
     }
   };
+
+  if (loading) {
+    return <Text>Loading...</Text>;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -98,6 +129,7 @@ export default function EditProfileScreen() {
             style={styles.input}
             value={email}
             onChangeText={setEmail}
+            editable={false}
             placeholder="Enter your email"
             keyboardType="email-address"
           />
@@ -136,7 +168,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 10,
     backgroundColor: '#fff',
   },
   avatarContainer: {

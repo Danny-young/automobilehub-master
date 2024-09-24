@@ -5,9 +5,6 @@ import { useEffect, useState } from "react";
 
 const Header = () => {
 
-
-
-
     const [userId, setUserId] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 

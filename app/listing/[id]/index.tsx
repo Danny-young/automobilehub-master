@@ -21,9 +21,9 @@ const IMG_HEIGHT = 300;
 const Page = () => {
   const { top } = useSafeAreaInsets();
   const { id: idString } = useLocalSearchParams();
+  const id = parseFloat(Array.isArray(idString) ? idString[0] : idString);
   const navigation = useNavigation();
   const router = useRouter();
-  const id = parseFloat(Array.isArray(idString) ? idString[0] : idString);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
   const { data: services, error, isLoading } = useService(id);

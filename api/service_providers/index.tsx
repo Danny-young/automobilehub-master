@@ -40,6 +40,7 @@ export const useService = (id: number) => {
       });
 }
 
+
 export const useInsertCompany = () => {
 return useMutation({
     async mutationFn(data: any){
@@ -64,3 +65,19 @@ return useMutation({
     },
 });
 };
+
+
+/* ------------------------------------------User Queries ---------------------------- */
+
+export const useUser = (id: number) => {
+  return useQuery({
+      queryKey: ['user', id],
+      queryFn: async () => {
+        const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+        if (error) {
+          throw new Error(error.message);
+        }
+        return data;
+      },
+    });
+}
