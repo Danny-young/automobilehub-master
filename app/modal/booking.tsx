@@ -8,34 +8,35 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Vehicle = {
   id: string;
-  make: string;
+  name: string;
   model: string;
   year: string;
   image_url?: string; // Image URL for car
 };
 
+type Service = {
+  id: string | number;
+  name: string;
+  description: string;
+  price: number;
+  image_url?: string;
+};
+
 export default function BookingScreen() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { serviceId } = useLocalSearchParams();
+  const { serviceId } = useLocalSearchParams(); // Correctly extract serviceId
   const router = useRouter();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [year, setYear] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
-  const [image, setImage] = useState<string | null>(null);
-  const [cars, setCars] = useState<Car[]>([]);
- 
 
   useEffect(() => {
-    const fetchUserId = async () => {
+    const fetchUserIdAndData = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem('userId');
-        if (storedUserId) {
-          setUserId(storedUserId);
-          fetchCars(storedUserId); // Fetch cars after userId is available
+        if (storedUserId && serviceId) {
+          fetchVehicles(storedUserId);
+          fetchServiceDetails(serviceId); // Now this should work correctly
         }
       } catch (error) {
         console.error('Failed to fetch userId from AsyncStorage:', error);
@@ -43,36 +44,46 @@ export default function BookingScreen() {
         setLoading(false);
       }
     };
-    
-    fetchUserId();
-  }, []);
 
-  const fetchCars = async (userId: string) => {
+    fetchUserIdAndData();
+  }, [serviceId]);
+
+  const fetchVehicles = async (userId: string) => {
     setLoading(true); // Start loading
     try {
       const { data, error } = await supabase
         .from('vehicles')
         .select('*')
         .eq('owner', userId);
-  
-      if (error) {
-        console.error('Error fetching cars:', error);
-      } else {
-        // Convert the data to Car[] type
-        const carsData = data.map((car: any) => ({
-          id: car.id.toString(), // Convert number to string
-          name: car.name,
-          model: car.model,
-          year: car.year,
-          image_url: car.image_url
-        }));
-  
-        setCars(carsData || []);
 
-        console.log(carsData);
+      if (error) {
+        console.error('Error fetching vehicles:', error);
+      } else {
+        setVehicles(data || []);
       }
     } catch (error) {
-      console.error('Error fetching cars:', error);
+      console.error('Error fetching vehicles:', error);
+    } finally {
+      setLoading(false); // Stop loading
+    }
+  };
+
+  const fetchServiceDetails = async (serviceId: string) => {
+    setLoading(true); // Start loading
+    try {
+      const { data, error } = await supabase
+        .from('Services')
+        .select('*')
+        .eq('id', serviceId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching service details:', error);
+      } else {
+        setService(data);
+      }
+    } catch (error) {
+      console.error('Error fetching service details:', error);
     } finally {
       setLoading(false); // Stop loading
     }
@@ -83,11 +94,11 @@ export default function BookingScreen() {
   };
 
   const handleBookAppointment = () => {
-    if (selectedVehicle) {
+    if (selectedVehicle && service) {
       console.log('Booking appointment for:', { serviceId, vehicleId: selectedVehicle.id });
       router.back(); // Navigate back after booking
     } else {
-      alert('Please select a vehicle');
+      alert('Please select a vehicle and service');
     }
   };
 
@@ -101,6 +112,18 @@ export default function BookingScreen() {
         }}
       />
       <ScrollView>
+        <Text style={styles.sectionTitle}>Service Details:</Text>
+        {service && (
+          <View style={styles.serviceDetails}>
+            {service.image_url && (
+              <Image source={{ uri: service.image_url }} style={styles.serviceImage} />
+            )}
+            <Text style={styles.serviceName}>{service.name}</Text>
+            <Text style={styles.serviceDescription}>{service.description}</Text>
+            <Text style={styles.servicePrice}>Price: ${service.price}</Text>
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>Select Your Vehicle:</Text>
 
         {loading ? (
@@ -119,7 +142,7 @@ export default function BookingScreen() {
                 <Image source={{ uri: vehicle.image_url }} style={styles.carImage} />
               )}
               <View style={styles.carDetails}>
-                <Text style={styles.carText}>{`${vehicle.year} ${vehicle.make} ${vehicle.model}`}</Text>
+                <Text style={styles.carText}>{`${vehicle.year} ${vehicle.name} ${vehicle.model}`}</Text>
               </View>
             </TouchableOpacity>
           ))
@@ -128,9 +151,9 @@ export default function BookingScreen() {
         <BookingSection />
 
         <TouchableOpacity
-          style={[styles.bookButton, !selectedVehicle && styles.disabledButton]}
+          style={[styles.bookButton, (!selectedVehicle || !service) && styles.disabledButton]}
           onPress={handleBookAppointment}
-          disabled={!selectedVehicle}
+          disabled={!selectedVehicle || !service}
         >
           <Text style={styles.bookButtonText}>Book Appointment</Text>
         </TouchableOpacity>
@@ -142,13 +165,33 @@ export default function BookingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'yellow',
-    padding: 20,
+    backgroundColor: '#fff',
+    padding: 10,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+  serviceDetails: {
+    marginBottom: 20,
+  },
+  serviceImage: {
+    width: '100%',
+    height: 200,
+    marginBottom: 10,
+  },
+  serviceName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  serviceDescription: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  servicePrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   vehicleItem: {
     flexDirection: 'row', // Align image and text horizontally
