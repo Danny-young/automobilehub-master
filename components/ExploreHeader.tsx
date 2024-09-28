@@ -1,10 +1,20 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native'
 import React, { useRef, useState } from 'react'
 import { Link } from 'expo-router';
 import { TabBarIcon } from './navigation/TabBarIcon';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
+import { Platform } from 'react-native';
 
+// Add this line to define the server address
+const serverAddress = Platform.select({
+  android: 'http://192.168.43.245:5000', // Replace with your computer's IP address
+  ios: 'http://192.168.43.245:5000', // Replace with your computer's IP address
+  default: 'http://192.168.43.245:5000', // Replace with your computer's IP address
+});
+
+console.log('Server address:', serverAddress);
 
 const categories = [
   {
@@ -40,11 +50,24 @@ interface Props {
   onSearch: (query: string) => void;
 }
 
+const serviceInfo = [
+  'We sell engine oil and spare parts',
+  'Car light is 200gh',
+  'Cost of renting Benz is between 500gh to 700gh',
+  'We offer car wash services starting from 50gh',
+  'Our mechanics can diagnose and fix most car issues',
+];
+
 const ExploreHeader = ({ onCategoryChanged, onSearch }: Props) => {
 const scrollRef = useRef<ScrollView>(null);
   const itemRef = useRef<Array<TouchableOpacity | null >>([]) ;
   const [activeIndex, setActiveIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatResponse, setChatResponse] = useState('');
 
   const selectCategory = (index: number) => {
   const selected = itemRef.current[index];
@@ -62,6 +85,120 @@ const scrollRef = useRef<ScrollView>(null);
     onSearch(query);
   };
 
+  const startListening = async () => {
+    setIsListening(true);
+    setSearchQuery('');
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+    } catch (err) {
+      console.error('Failed to start recording', err);
+      setIsListening(false);
+    }
+  };
+
+  const stopListening = async () => {
+    setIsListening(false);
+    if (!recording) return;
+
+    setRecording(null);
+    await recoding.stopAndUnloadAsync();
+    const uri = recoding.getURI();
+    if (uri) {
+      await sendAudioToServer(uri);
+    }
+  };
+
+  const sendAudioToServer = async (uri: string) => {
+    const formData = new FormData();
+    formData.append('audio', {
+      uri: uri,
+      type: 'audio/x-wav',
+      name: 'speech.wav',
+    } as any);
+
+    try {
+      console.log('Sending request to:', `${serverAddress}/speech-to-text`);
+      console.log('Audio URI:', uri);
+      
+      const response = await fetch(`${serverAddress}/speech-to-text`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 10000, // 10 seconds timeout
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', JSON.stringify(response.headers));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const text = await response.text();
+      console.log('Response text:', text);
+
+      // Parse the response text as JSON
+      const data = JSON.parse(text);
+      if (data.text) {
+        console.log('Recognized text:', data.text);
+        setSearchQuery(data.text);
+        onSearch(data.text);
+      } else if (data.error) {
+        console.error('Error from server:', data.error);
+      }
+    } catch (error) {
+      console.error('Error sending audio to server:', error);
+      if (error instanceof Error) {
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      if (error instanceof TypeError) {
+        console.error('TypeError details:', error);
+      }
+    }
+  };
+
+  const handleSpeechToText = async () => {
+    if (isListening) {
+      await stopListening();
+    } else {
+      await startListening();
+    }
+  };
+
+  const handleAIChat = () => {
+    const lowercaseInput = chatInput.toLowerCase();
+    let response = "I'm sorry, I don't have information about that. Can you ask something else?";
+
+    if (lowercaseInput.includes('engine') || lowercaseInput.includes('spare')) {
+      response = serviceInfo[0];
+    } else if (lowercaseInput.includes('light')) {
+      response = serviceInfo[1];
+    } else if (lowercaseInput.includes('benz') || lowercaseInput.includes('rent')) {
+      response = serviceInfo[2];
+    } else if (lowercaseInput.includes('wash')) {
+      response = serviceInfo[3];
+    } else if (lowercaseInput.includes('mechanic') || lowercaseInput.includes('fix')) {
+      response = serviceInfo[4];
+    }
+
+    setChatResponse(response);
+    setChatInput('');
+  };
+
   return (
     <SafeAreaView>
 
@@ -74,8 +211,8 @@ const scrollRef = useRef<ScrollView>(null);
             value={searchQuery}
             onChangeText={handleSearch}
           />
-        <TouchableOpacity style={styles.filterBtn}>
-        <TabBarIcon name={"microphone"} />
+        <TouchableOpacity style={[styles.filterBtn, isListening && styles.listeningBtn]} onPress={handleSpeechToText}>
+        <TabBarIcon name={isListening ? "stop" : "microphone"} />
         </TouchableOpacity>
         </View>
      
@@ -104,6 +241,46 @@ const scrollRef = useRef<ScrollView>(null);
       </ScrollView>
       </View>
    
+    <TouchableOpacity 
+      style={styles.floatingButton} 
+      onPress={() => setIsChatOpen(true)}
+    >
+      <MaterialCommunityIcons name="robot" size={24} color="white" />
+    </TouchableOpacity>
+
+    <Modal
+      visible={isChatOpen}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setIsChatOpen(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={() => setIsChatOpen(false)}
+          >
+            <MaterialCommunityIcons name="close" size={24} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>AI Assistant</Text>
+          <Text style={styles.chatResponse}>{chatResponse}</Text>
+          <View style={styles.chatInputContainer}>
+            <TextInput
+              style={styles.chatInput}
+              value={chatInput}
+              onChangeText={setChatInput}
+              placeholder="Ask about our services..."
+            />
+            <TouchableOpacity 
+              style={styles.sendButton} 
+              onPress={handleAIChat}
+            >
+              <MaterialCommunityIcons name="send" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
     </SafeAreaView>
   )
 }
@@ -173,6 +350,70 @@ const scrollRef = useRef<ScrollView>(null);
     
    },
 
-})
+   listeningBtn: {
+    backgroundColor: 'red',
+   },
+
+   floatingButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: 10,
+    backgroundColor: 'blue',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    height: '70%',
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  chatResponse: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  chatInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chatInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 20,
+    padding: 10,
+    marginRight: 10,
+  },
+  sendButton: {
+    backgroundColor: 'blue',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default ExploreHeader

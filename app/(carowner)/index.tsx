@@ -13,8 +13,8 @@ export default function CarOwnerHome() {
 
   const filteredServices = allServices?.filter(service => 
     (selectedCategory === 'All Service' || service.category === selectedCategory) &&
-    (service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     service.User_Business?.business_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    ((service.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+     (service.User_Business && service.User_Business.business_name?.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   const handleCategoryChange = (category: string) => {
@@ -22,7 +22,9 @@ export default function CarOwnerHome() {
   };
 
   const handleSearch = (query: string) => {
+    console.log('Searching for:', query);
     setSearchQuery(query);
+    // The filtering is already handled by the `filteredServices` variable
   };
 
   if (isLoading) {
