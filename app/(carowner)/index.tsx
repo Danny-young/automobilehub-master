@@ -11,11 +11,11 @@ export default function CarOwnerHome() {
   const [searchQuery, setSearchQuery] = useState('');
   const { data: allServices, isLoading, error } = useServices();
 
-  const filteredServices = allServices?.filter(service => 
+  const filteredServices = allServices ? allServices.filter(service => 
     (selectedCategory === 'All Service' || service.category === selectedCategory) &&
     ((service.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
      (service.User_Business && service.User_Business.business_name?.toLowerCase().includes(searchQuery.toLowerCase())))
-  );
+  ) : [];
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -38,28 +38,32 @@ export default function CarOwnerHome() {
   return (
     <View style={{ flex: 1, paddingTop: top }}>
       <ExploreHeader onCategoryChanged={handleCategoryChange} onSearch={handleSearch} />
-      <FlatList
-        data={filteredServices}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <Listing
-            service={{
-              ...item,
-              User_Business: item.User_Business ? item.User_Business : {
-                address: null,
-                business_name: null,
-                coordinates: {},
-                created_at: '',
-                description: null,
-                id: 0,
-                owner: null,
-                provider_email: null,
-                telephone: null
-              }
-            }}
-          />
-        )}
-      />
+      {allServices && allServices.length > 0 ? (
+        <FlatList
+          data={filteredServices}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <Listing
+              service={{
+                ...item,
+                User_Business: item.User_Business ? item.User_Business : {
+                  address: null,
+                  business_name: null,
+                  coordinates: {},
+                  created_at: '',
+                  description: null,
+                  id: 0,
+                  owner: null,
+                  provider_email: null,
+                  telephone: null
+                }
+              }}
+            />
+          )}
+        />
+      ) : (
+        <Text style={{ textAlign: 'center', marginTop: 20 }}>No services available</Text>
+      )}
     </View>
   );
 }

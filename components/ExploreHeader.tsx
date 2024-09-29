@@ -110,8 +110,8 @@ const scrollRef = useRef<ScrollView>(null);
     if (!recording) return;
 
     setRecording(null);
-    await recoding.stopAndUnloadAsync();
-    const uri = recoding.getURI();
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
     if (uri) {
       await sendAudioToServer(uri);
     }
@@ -135,7 +135,6 @@ const scrollRef = useRef<ScrollView>(null);
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 10000, // 10 seconds timeout
       });
 
       console.log('Response status:', response.status);

@@ -275,6 +275,30 @@ export type Database = {
           },
         ]
       }
+      miscellanous_service: {
+        Row: {
+          created_at: string
+          id: number
+          service_category: string | null
+          service_id: number | null
+          time_duration: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          service_category?: string | null
+          service_id?: number | null
+          time_duration?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          service_category?: string | null
+          service_id?: number | null
+          time_duration?: number | null
+        }
+        Relationships: []
+      }
       rental_service: {
         Row: {
           created_at: string
@@ -344,6 +368,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_and_parts: {
+        Row: {
+          availability: boolean | null
+          category: string | null
+          created_at: string
+          id: number
+          service_id: number | null
+          warrantyProvided: boolean | null
+        }
+        Insert: {
+          availability?: boolean | null
+          category?: string | null
+          created_at?: string
+          id?: number
+          service_id?: number | null
+          warrantyProvided?: boolean | null
+        }
+        Update: {
+          availability?: boolean | null
+          category?: string | null
+          created_at?: string
+          id?: number
+          service_id?: number | null
+          warrantyProvided?: boolean | null
+        }
+        Relationships: []
       }
       service_categories: {
         Row: {
