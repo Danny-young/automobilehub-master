@@ -7,55 +7,340 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       Appointment: {
         Row: {
           appointment_date: string | null
           appointment_status: string | null
+          appointment_type: string | null
           created_at: string
           id: number
           notes: string | null
           service_category: Database["public"]["Enums"]["categories"] | null
-          service_provider: string | null
           service_type: Database["public"]["Enums"]["service_types"] | null
-          user_id: string | null
         }
         Insert: {
           appointment_date?: string | null
           appointment_status?: string | null
+          appointment_type?: string | null
           created_at?: string
           id?: number
           notes?: string | null
           service_category?: Database["public"]["Enums"]["categories"] | null
-          service_provider?: string | null
           service_type?: Database["public"]["Enums"]["service_types"] | null
-          user_id?: string | null
         }
         Update: {
           appointment_date?: string | null
           appointment_status?: string | null
+          appointment_type?: string | null
           created_at?: string
           id?: number
           notes?: string | null
           service_category?: Database["public"]["Enums"]["categories"] | null
-          service_provider?: string | null
           service_type?: Database["public"]["Enums"]["service_types"] | null
+        }
+        Relationships: []
+      }
+      booking: {
+        Row: {
+          appointment_date: string | null
+          appointment_time: string | null
+          appointment_type: string | null
+          created_at: string
+          id: number
+          service_category: string | null
+          service_provider: string | null
+          service_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          appointment_date?: string | null
+          appointment_time?: string | null
+          appointment_type?: string | null
+          created_at?: string
+          id?: number
+          service_category?: string | null
+          service_provider?: string | null
+          service_type?: string | null
           user_id?: string | null
+        }
+        Update: {
+          appointment_date?: string | null
+          appointment_time?: string | null
+          appointment_type?: string | null
+          created_at?: string
+          id?: number
+          service_category?: string | null
+          service_provider?: string | null
+          service_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cleaning_and_detailing: {
+        Row: {
+          add_ons: string | null
+          cleaning_package: string | null
+          created_at: string
+          id: number
+          service_id: number | null
+          type: string | null
+        }
+        Insert: {
+          add_ons?: string | null
+          cleaning_package?: string | null
+          created_at?: string
+          id?: number
+          service_id?: number | null
+          type?: string | null
+        }
+        Update: {
+          add_ons?: string | null
+          cleaning_package?: string | null
+          created_at?: string
+          id?: number
+          service_id?: number | null
+          type?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "Appointment_service_provider_fkey"
-            columns: ["service_provider"]
+            foreignKeyName: "cleaning_and_detailing_service_id_fkey"
+            columns: ["service_id"]
             isOneToOne: false
-            referencedRelation: "Service_Providers"
-            referencedColumns: ["Provider_ID"]
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
           },
+        ]
+      }
+      customization_and_performance: {
+        Row: {
+          created_at: string
+          customization_type: string | null
+          id: number
+          parts_material: string | null
+          service_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          customization_type?: string | null
+          id?: number
+          parts_material?: string | null
+          service_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          customization_type?: string | null
+          id?: number
+          parts_material?: string | null
+          service_id?: number | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "Appointment_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "customization_and_performance_service_id_fkey"
+            columns: ["service_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_service: {
+        Row: {
+          availability: string | null
+          created_at: string
+          emergency_type: string | null
+          id: number
+          response_time: string | null
+          service_id: number | null
+        }
+        Insert: {
+          availability?: string | null
+          created_at?: string
+          emergency_type?: string | null
+          id?: number
+          response_time?: string | null
+          service_id?: number | null
+        }
+        Update: {
+          availability?: string | null
+          created_at?: string
+          emergency_type?: string | null
+          id?: number
+          response_time?: string | null
+          service_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_service_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_service: {
+        Row: {
+          areas_covered: string | null
+          created_at: string
+          id: number
+          inspection_type: string | null
+          report_provided: boolean | null
+          service_id: number | null
+        }
+        Insert: {
+          areas_covered?: string | null
+          created_at?: string
+          id?: number
+          inspection_type?: string | null
+          report_provided?: boolean | null
+          service_id?: number | null
+        }
+        Update: {
+          areas_covered?: string | null
+          created_at?: string
+          id?: number
+          inspection_type?: string | null
+          report_provided?: boolean | null
+          service_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_service_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_service: {
+        Row: {
+          created_at: string
+          estimated_time: string | null
+          frequency: string | null
+          id: number
+          required_part: string | null
+          service_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          estimated_time?: string | null
+          frequency?: string | null
+          id?: number
+          required_part?: string | null
+          service_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          estimated_time?: string | null
+          frequency?: string | null
+          id?: number
+          required_part?: string | null
+          service_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_service_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rental_service: {
+        Row: {
+          created_at: string
+          id: number
+          rental_duration: string | null
+          service_id: number | null
+          vehicle_model: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          rental_duration?: string | null
+          service_id?: number | null
+          vehicle_model?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          rental_duration?: string | null
+          service_id?: number | null
+          vehicle_model?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_service_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repair_service: {
+        Row: {
+          created_at: string
+          id: number
+          issue_type: string | null
+          parts_required: string | null
+          service_id: number | null
+          severity_level: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          issue_type?: string | null
+          parts_required?: string | null
+          service_id?: number | null
+          severity_level?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          issue_type?: string | null
+          parts_required?: string | null
+          service_id?: number | null
+          severity_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_service_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
             referencedColumns: ["id"]
           },
         ]
@@ -127,7 +412,7 @@ export type Database = {
       }
       Services: {
         Row: {
-          category: string | null
+          category: string
           created_at: string
           description: string | null
           duration: number | null
@@ -141,7 +426,7 @@ export type Database = {
           start_date: string | null
         }
         Insert: {
-          category?: string | null
+          category: string
           created_at?: string
           description?: string | null
           duration?: number | null
@@ -155,7 +440,7 @@ export type Database = {
           start_date?: string | null
         }
         Update: {
-          category?: string | null
+          category?: string
           created_at?: string
           description?: string | null
           duration?: number | null
@@ -221,6 +506,41 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tire_services: {
+        Row: {
+          created_at: string
+          id: number
+          service_id: number | null
+          service_type: string | null
+          tire_brand: string | null
+          tire_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          service_id?: number | null
+          service_type?: string | null
+          tire_brand?: string | null
+          tire_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          service_id?: number | null
+          service_type?: string | null
+          tire_brand?: string | null
+          tire_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tire_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
             referencedColumns: ["id"]
           },
         ]
