@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import BookingSection from '@/components/BookAppointment/booking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native'; // Assuming Alert is imported from expo
 
 type Vehicle = {
   id: string;
@@ -23,6 +22,8 @@ type Service = {
   image_url?: string;
   category: string;
   user_business_id: string;
+  owner_id: string;
+  provider_name: string; // Add this line
 };
 
 export default function BookingScreen() {
@@ -78,7 +79,10 @@ export default function BookingScreen() {
     try {
       const { data, error } = await supabase
         .from('Services')
-        .select('*, User_Business!inner(id)')
+        .select(`
+          *,
+          User_Business!inner(id, owner, business_name)
+        `)
         .eq('id', serviceId)
         .single();
 
@@ -86,7 +90,9 @@ export default function BookingScreen() {
 
       setService({
         ...data,
-        user_business_id: data.User_Business.id
+        user_business_id: data.User_Business.id,
+        owner_id: data.User_Business.owner,
+        provider_name: data.User_Business.business_name // Use business_name instead of name
       });
     } catch (error) {
       console.error('Error fetching service details:', error);
@@ -99,6 +105,14 @@ export default function BookingScreen() {
     setSelectedVehicle(vehicle);
   };
 
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date);
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+  };
+
   const handleBookAppointment = async () => {
     if (selectedVehicle && service && selectedDate && selectedTime) {
       try {
@@ -109,13 +123,13 @@ export default function BookingScreen() {
           .from('booking')
           .insert({
             user_id: userId,
-            service_provider: service.user_business_id,
-            service_type: selectedVehicle.id,
+            service_provider: service.owner_id,
+            vehicle_type: selectedVehicle.id,
             service_category: service.category,
             appointment_date: selectedDate,
             appointment_time: selectedTime,
             appointment_type: 'pending',
-            
+            // Remove the service_provider_name field
           })
           .select();
 
@@ -152,6 +166,7 @@ export default function BookingScreen() {
             <Text style={styles.serviceName}>{service.name}</Text>
             <Text style={styles.serviceDescription}>{service.description}</Text>
             <Text style={styles.servicePrice}>Price: ${service.price}</Text>
+            <Text style={styles.serviceProvider}>Provider: {service.provider_name}</Text>
           </View>
         )}
 
@@ -180,8 +195,8 @@ export default function BookingScreen() {
         )}
 
         <BookingSection
-          onDateSelect={(date) => setSelectedDate(date)}
-          onTimeSelect={(time) => setSelectedTime(time)}
+          onDateSelect={handleDateSelect}
+          onTimeSelect={handleTimeSelect}
         />
 
         <TouchableOpacity
@@ -226,6 +241,11 @@ const styles = StyleSheet.create({
   servicePrice: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  serviceProvider: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 5,
   },
   vehicleItem: {
     flexDirection: 'row', // Align image and text horizontally

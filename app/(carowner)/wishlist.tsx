@@ -7,7 +7,6 @@ import Colors from '@/constants/Colors';
 interface Appointment {
   id: number;
   service_provider: string;
-  service_type: string;
   service_category: string;
   appointment_date: string;
   appointment_time: string;
@@ -15,7 +14,7 @@ interface Appointment {
 }
 
 const Wishlist = () => {
-  const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
+  const [currentAppointments, setCurrentAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,16 +31,16 @@ const Wishlist = () => {
 
       const { data, error } = await supabase
         .from('booking')
-        .select('*')
+        .select('*, User_Business(*)')
         .eq('user_id', userId)
         .order('appointment_date', { ascending: false });
 
       if (error) throw error;
 
-      const pending = data.filter(app => app.appointment_type === 'pending');
-      const past = data.filter(app => ['accepted', 'rejected', 'completed'].includes(app.appointment_type));
+      const current = data.filter(app => ['pending', 'accepted'].includes(app.appointment_type));
+      const past = data.filter(app => app.appointment_type === 'completed');
 
-      setPendingAppointments(pending);
+      setCurrentAppointments(current);
       setPastAppointments(past);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -52,7 +51,7 @@ const Wishlist = () => {
 
   const renderAppointmentItem = ({ item }: { item: Appointment }) => (
     <View style={styles.appointmentItem}>
-      <Text style={styles.appointmentText}>Service: {item.service_type}</Text>
+      <Text style={styles.appointmentText}>Service: {item.service_provider}</Text>
       <Text style={styles.appointmentText}>Category: {item.service_category}</Text>
       <Text style={styles.appointmentText}>Date: {item.appointment_date}</Text>
       <Text style={styles.appointmentText}>Time: {item.appointment_time}</Text>
@@ -66,16 +65,16 @@ const Wishlist = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Pending Appointments</Text>
-      {pendingAppointments.length > 0 ? (
+      <Text style={styles.sectionTitle}>Current Appointments</Text>
+      {currentAppointments.length > 0 ? (
         <FlatList
-          data={pendingAppointments}
+          data={currentAppointments}
           renderItem={renderAppointmentItem}
           keyExtractor={(item) => item.id.toString()}
           style={styles.list}
         />
       ) : (
-        <Text style={styles.noAppointmentsText}>No pending appointments</Text>
+        <Text style={styles.noAppointmentsText}>No current appointments</Text>
       )}
 
       <Text style={styles.sectionTitle}>Past Appointments</Text>
@@ -104,7 +103,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
-    color: Colors.text,
+    color: Colors.dark,
   },
   appointmentItem: {
     backgroundColor: Colors.lightGray,
@@ -115,7 +114,7 @@ const styles = StyleSheet.create({
   appointmentText: {
     fontSize: 16,
     marginBottom: 5,
-    color: Colors.text,
+    color: Colors.dark,
   },
   noAppointmentsText: {
     fontSize: 16,
@@ -128,7 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 20,
-    color: Colors.text,
+    color: Colors.dark,
   },
   list: {
     maxHeight: 300, // Adjust this value as needed

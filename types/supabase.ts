@@ -76,8 +76,8 @@ export type Database = {
           id: number
           service_category: string | null
           service_provider: string | null
-          service_type: string | null
           user_id: string | null
+          vehicle_type: number | null
         }
         Insert: {
           appointment_date?: string | null
@@ -87,8 +87,8 @@ export type Database = {
           id?: number
           service_category?: string | null
           service_provider?: string | null
-          service_type?: string | null
           user_id?: string | null
+          vehicle_type?: number | null
         }
         Update: {
           appointment_date?: string | null
@@ -98,10 +98,32 @@ export type Database = {
           id?: number
           service_category?: string | null
           service_provider?: string | null
-          service_type?: string | null
           user_id?: string | null
+          vehicle_type?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "booking_service_provider_fkey1"
+            columns: ["service_provider"]
+            isOneToOne: false
+            referencedRelation: "User_Business"
+            referencedColumns: ["owner"]
+          },
+          {
+            foreignKeyName: "booking_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_vehicle_type_fkey"
+            columns: ["vehicle_type"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cleaning_and_detailing: {
         Row: {
@@ -297,7 +319,15 @@ export type Database = {
           service_id?: number | null
           time_duration?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "miscellanous_service_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rental_service: {
         Row: {
@@ -394,7 +424,15 @@ export type Database = {
           service_id?: number | null
           warrantyProvided?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_and_parts_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_categories: {
         Row: {

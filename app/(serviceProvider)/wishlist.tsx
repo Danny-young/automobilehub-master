@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { defaultStyles } from '@/constants/Styles';
 import Header from '@/components/servicepage/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 
 interface Appointment {
   id: number;
@@ -17,36 +18,118 @@ interface Appointment {
   status: 'pending' | 'accepted' | 'rejected';
 }
 
+// Configure notifications
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 export default function Wishlist() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    registerForPushNotificationsAsync();
+    const notificationListener = Notifications.addNotificationReceivedListener(handleNotification);
+    const intervalId = setInterval(checkForNewAppointments, 60000); // Check every minute
+
+    // Add this line to fetch appointments when the component mounts
     fetchAppointments();
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener);
+      clearInterval(intervalId);
+    };
   }, []);
+
+  const registerForPushNotificationsAsync = async () => {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        alert('Failed to get push token for push notification!');
+        return;
+      }
+    } catch (error) {
+      console.error('Error requesting push notification permissions:', error);
+      alert('Error requesting push notification permissions');
+    }
+  };
+
+  const handleNotification = (notification: Notifications.Notification) => {
+    Alert.alert(
+      notification.request.content.title || '',
+      notification.request.content.body || ''
+    );
+  };
+
+  const checkForNewAppointments = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) return;
+
+      const { data, error } = await supabase
+        .from('booking')
+        .select('*')
+        .eq('service_provider', userId)
+        .eq('appointment_type', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking for new appointments:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const latestAppointment = data[0];
+        const lastCheckedTime = await AsyncStorage.getItem('lastCheckedTime');
+
+        if (!lastCheckedTime || new Date(latestAppointment.created_at) > new Date(lastCheckedTime)) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'New Booking Request!',
+              body: `You have a new booking request for ${latestAppointment.service_type}`,
+            },
+            trigger: null,
+          });
+          await AsyncStorage.setItem('lastCheckedTime', new Date().toISOString());
+        }
+      }
+    } catch (error) {
+      console.error('Error during check for new appointments:', error);
+    }
+  };
 
   const fetchAppointments = async () => {
     try {
+      setLoading(true); // Set loading to true before fetching
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
         throw new Error('User ID not found');
       }
-  
+
       const { data, error } = await supabase
         .from('booking')
         .select('*')
         .eq('service_provider', userId)
         .eq('appointment_type', 'pending')
         .order('appointment_date', { ascending: true });
-  
+
       if (error) throw error;
-  
-      // Ensure each item has the required properties
+
       const mappedData = data.map(item => ({
         ...item,
         status: item.appointment_type as 'pending' | 'accepted' | 'rejected'
       }));
-  
+
       setAppointments(mappedData || []);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -60,7 +143,10 @@ export default function Wishlist() {
     try {
       const { error } = await supabase
         .from('booking')
-        .update({ appointment_type: action === 'accept' ? 'accepted' : 'rejected' })
+        .update({ 
+          appointment_type: action === 'accept' ? 'accepted' : 'rejected',
+          updated_at: new Date().toISOString() // Add this line
+        })
         .eq('id', appointmentId);
 
       if (error) throw error;
