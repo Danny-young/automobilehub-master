@@ -3,16 +3,10 @@ import React, { useLayoutEffect } from 'react';
 import { Link, Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useService } from '@/api/service_providers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { defaultPizzaImage } from '@/components/Listings/serviceItemList';
+import Defaultcarlogo from '@/assets/images/carconnect.jpg' // Import your local image
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
-import Animated, {
-  SlideInDown,
-  interpolate,
-  useAnimatedRef,
-  useAnimatedStyle,
-  useScrollViewOffset,
-} from 'react-native-reanimated';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 import { defaultStyles } from '@/constants/Styles';
 
 const { width } = Dimensions.get('window');
@@ -24,7 +18,6 @@ const Page = () => {
   const id = parseFloat(Array.isArray(idString) ? idString[0] : idString);
   const navigation = useNavigation();
   const router = useRouter();
-  const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
   const { data: services, error, isLoading } = useService(id);
 
@@ -55,36 +48,39 @@ const Page = () => {
     <View style={styles.container}>
       <Animated.ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
-        ref={scrollRef}
         scrollEventThrottle={16}>
+        
+        {/* Service Image */}
         <Animated.Image
-          source={{ uri: services.image || defaultPizzaImage }}
+          source={services.image ? { uri: services.image } : Defaultcarlogo}
           style={[styles.image]}
           resizeMode="cover"
         />
 
         <View style={styles.infoContainer}>
           <Text style={styles.name}>{services.name}</Text>
-          <Text style={styles.location}>
-            {services.category} 
-          </Text>
+          <Text style={styles.location}>{services.category}</Text>
           
           <View style={{ flexDirection: 'row', gap: 4 }}>
             <Ionicons name="star" size={16} />
-            <Text style={styles.ratings}>
-              {services.quantity ?? 0 / 20  } {/* · {services.number_of_reviews} reviews */}
-            </Text>
+            <Text style={styles.ratings}>{services.quantity ?? 0 / 20}</Text>
           </View>
+
           <View style={styles.divider} />
 
+          {/* Provider Information */}
           <View style={styles.hostView}>
-            <Image source={{ uri: services.provider_id  || defaultPizzaImage}} style={styles.host} />
-
-            <Link href={`/listing/${services.id}/provider`}  asChild>
-            <TouchableOpacity >
-              <Text style={{ fontWeight: '500', fontSize: 16 }}>Service by {services.User_Business?.business_name}</Text>
-              <Text>Member since {createdAtDate}</Text>
-            </TouchableOpacity>
+            <Image 
+              source={services.provider_id ? { uri: services.provider_id } : Defaultcarlogo} 
+              style={styles.host} 
+            />
+            <Link href={`/listing/${services.id}/provider`} asChild>
+              <TouchableOpacity>
+                <Text style={{ fontWeight: '500', fontSize: 16 }}>
+                  Service by {services.User_Business?.business_name}
+                </Text>
+                <Text>Member since {createdAtDate}</Text>
+              </TouchableOpacity>
             </Link>
           </View>
 
@@ -94,12 +90,13 @@ const Page = () => {
         </View>
       </Animated.ScrollView>
 
+      {/* Footer */}
       <Animated.View style={defaultStyles.footer} entering={SlideInDown.delay(200)}>
         <View
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <TouchableOpacity style={styles.footerText}>
             <Text style={styles.footerPrice}>Ghc{services.price}</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
           
           <TouchableOpacity 
             style={[defaultStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}
@@ -107,7 +104,6 @@ const Page = () => {
           >
             <Text style={defaultStyles.btnText}>Appointment</Text>
           </TouchableOpacity>
-          
         </View>
       </Animated.View>
     </View>
@@ -139,12 +135,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontFamily: 'mon-sb',
   },
-  rooms: {
-    fontSize: 16,
-    color: Colors.gray,
-    marginVertical: 4,
-    fontFamily: 'mon',
-  },
   ratings: {
     fontSize: 16,
     fontFamily: 'mon-sb',
@@ -175,27 +165,6 @@ const styles = StyleSheet.create({
   footerPrice: {
     fontSize: 18,
     fontFamily: 'mon-sb',
-  },
-  roundButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 50,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: Colors.primary,
-  },
-  bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  header: {
-    backgroundColor: '#fff',
-    height: 100,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.gray,
   },
   description: {
     fontSize: 16,

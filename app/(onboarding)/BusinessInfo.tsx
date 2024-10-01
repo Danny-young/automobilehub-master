@@ -93,7 +93,7 @@ const BusinessInfo = () => {
   
         // Mark onboarding as complete and navigate to the next screen
         await AsyncStorage.setItem('onboardingComplete', 'true');
-        router.replace('/(ServiceProvider)/');
+        router.replace('/(serviceProvider)/');
       } catch (error) {
         console.error('Unexpected Error:', error);
         alert('An unexpected error occurred. Please try again.');

@@ -1,150 +1,160 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform, Text, View, TextInput, Button, TouchableOpacity, Alert } from 'react-native';
-import {Picker} from '@react-native-picker/picker';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
-import { Formik } from 'formik';
-import { useEffect, useState } from 'react';
-// import { useUser } from "@clerk/clerk-expo";
 import { defaultStyles } from '@/constants/Styles';
 import Header from '@/components/servicepage/Header';
-import { useQuery } from '@tanstack/react-query'
-import * as Location from 'expo-location';
-import Entypo from '@expo/vector-icons/Entypo';
-import { useInsertCompany } from '@/api/service_providers';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+interface Appointment {
+  id: number;
+  user_id: string;
+  service_provider: string;
+  service_type: string;
+  service_category: string;
+  appointment_date: string;
+  appointment_time: string;
+  appointment_type: string;
+  status: 'pending' | 'accepted' | 'rejected';
+}
 
 export default function Wishlist() {
-  
-//   const { isLoaded, isSignedIn, user } = useUser();
-  const [location, setLocation] = useState<Coordinates | null>(null);
-  const [businessname, setBusinessname] = useState('');
-  const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('');
-  const [email, setEmail] = useState('');
-  const [telephone, setTelephone] = useState('');
-  const [errors, setErrors] = useState('');
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  
-const { mutate: insertCompany} = useInsertCompany();
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
-  type Coordinates = {
-    coordinate: {
-      lat: number;
-      long: number;
-    };
-
-  };
- 
-    const getPermissions = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log("Please grant location permissions");
-        return;
+  const fetchAppointments = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('User ID not found');
       }
-
-  let currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation({
-        coordinate: {
-          lat: currentLocation.coords.latitude,
-          long: currentLocation.coords.longitude
-        }
-      });
-      console.log(currentLocation);
-    };
-    // getPermissions();
-
-
-  // insertCompany(
-  //   {  })
-  const storeLocation = async () => {
-    if (location) {
-      
-      insertCompany({businessname, description, location,});
-   
-
-   
-      console.log('successfully saved')
+  
+      const { data, error } = await supabase
+        .from('booking')
+        .select('*')
+        .eq('service_provider', userId)
+        .eq('appointment_type', 'pending')
+        .order('appointment_date', { ascending: true });
+  
+      if (error) throw error;
+  
+      // Ensure each item has the required properties
+      const mappedData = data.map(item => ({
+        ...item,
+        status: item.appointment_type as 'pending' | 'accepted' | 'rejected'
+      }));
+  
+      setAppointments(mappedData || []);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      Alert.alert('Error', 'Failed to fetch appointments');
+    } finally {
+      setLoading(false);
     }
   };
-   
-   
-   
-  
-  
-return(
-  <View style={{marginTop:20, padding:35}} >
-    <Header/>
-    <Text style={defaultStyles.header}>Company Registration</Text>
-    <Text>Create your business account here</Text>
-<TouchableOpacity onPress={storeLocation}>
-  <Text>Store Images here Information</Text>
-</TouchableOpacity>
-<View> 
-          <TextInput style={defaultStyles.inputField}
-          placeholder='Business Name'
-          value={businessname} 
-          onChangeText={setBusinessname}
-          />
-          
-          <TextInput style={defaultStyles.inputField}
-          placeholder='Telephone'
-          keyboardType='number-pad'
-          value={telephone} 
-          
-          onChangeText={setTelephone}
-          />
-          <TextInput style={defaultStyles.inputField}
-          placeholder='Address'
-          value={address} 
-          onChangeText={setAddress}
-          />
 
-          <TextInput style={defaultStyles.inputField}
-          placeholder='Email'
-          value={email} 
-          onChangeText={setEmail}
-          />
-          {/* <TextInput style={{}}
-          placeholder='Telephone'
-          value={telephone} 
-          onChangeText={setTelephone}
-          /> */}
-          <View style={{display:'flex', flexDirection:'row', gap:7, alignItems:'center'}}>
-          <TextInput style={defaultStyles.inputField}
-          placeholder='Coordinates'
-          // value={}
-          // onChangeText={}/
-          />
-          <TouchableOpacity style={[defaultStyles.btn, {padding:3}]} onPress={getPermissions}>
-          <Text style={{color:'white', fontSize:14}}>location</Text>
-          <Entypo name="location" size={24} color="white" />
-          </TouchableOpacity>
-          </View>
+  const handleAppointmentAction = async (appointmentId: number, action: 'accept' | 'reject') => {
+    try {
+      const { error } = await supabase
+        .from('booking')
+        .update({ appointment_type: action === 'accept' ? 'accepted' : 'rejected' })
+        .eq('id', appointmentId);
 
-          <TextInput style={defaultStyles.descriptionText}
-          placeholder='Description'
-          value={description} 
-          onChangeText={setDescription}
-          numberOfLines={5}
-          textAlignVertical='top'
-          
-          />
-          
-          
- <TouchableOpacity style={defaultStyles.btn} >
-      <Text style={{color:'white', fontSize:14}}>Save</Text>
-    </TouchableOpacity>
-          
-         
-      
+      if (error) throw error;
 
-     
+      Alert.alert('Success', `Appointment ${action}ed successfully`);
+      fetchAppointments(); // Refresh the appointments list
+    } catch (error) {
+      console.error(`Error ${action}ing appointment:`, error);
+      Alert.alert('Error', `Failed to ${action} appointment`);
+    }
+  };
 
-   
-   
-     </View>
-       
-  </View> 
-)
+  const renderAppointmentItem = ({ item }: { item: Appointment }) => (
+    <View style={styles.appointmentItem}>
+      <Text style={styles.appointmentText}>Service: {item.service_type} ({item.service_category})</Text>
+      <Text style={styles.appointmentText}>Date: {item.appointment_date}</Text>
+      <Text style={styles.appointmentText}>Time: {item.appointment_time}</Text>
+      <Text style={styles.appointmentText}>Type: {item.appointment_type}</Text>
+      <View style={styles.appointmentActions}>
+        <TouchableOpacity 
+          style={[styles.appointmentButton, styles.acceptButton]} 
+          onPress={() => handleAppointmentAction(item.id, 'accept')}
+        >
+          <Text style={styles.appointmentButtonText}>Accept</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.appointmentButton, styles.rejectButton]} 
+          onPress={() => handleAppointmentAction(item.id, 'reject')}
+        >
+          <Text style={styles.appointmentButtonText}>Reject</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
+  return (
+    <View style={styles.container}>
+      <Header />
+      <Text style={defaultStyles.header}>Pending Appointments</Text>
+      {loading ? (
+        <Text>Loading appointments...</Text>
+      ) : appointments.length > 0 ? (
+        <FlatList
+          data={appointments}
+          renderItem={renderAppointmentItem}
+          keyExtractor={(item) => item.id.toString()}
+        />
+      ) : (
+        <Text style={styles.noAppointmentsText}>No pending appointments</Text>
+      )}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  appointmentItem: {
+    backgroundColor: '#f0f0f0',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  appointmentText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  appointmentActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  appointmentButton: {
+    padding: 10,
+    borderRadius: 5,
+    width: '48%',
+    alignItems: 'center',
+  },
+  acceptButton: {
+    backgroundColor: 'green',
+  },
+  rejectButton: {
+    backgroundColor: 'red',
+  },
+  appointmentButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  noAppointmentsText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+});

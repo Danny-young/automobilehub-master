@@ -5,6 +5,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import BookingSection from '@/components/BookAppointment/booking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native'; // Assuming Alert is imported from expo
 
 type Vehicle = {
   id: string;
@@ -20,6 +21,8 @@ type Service = {
   description: string;
   price: number;
   image_url?: string;
+  category: string;
+  user_business_id: string;
 };
 
 export default function BookingScreen() {
@@ -29,6 +32,8 @@ export default function BookingScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const { serviceId } = useLocalSearchParams(); // Correctly extract serviceId
   const router = useRouter();
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
 
   useEffect(() => {
     const fetchUserIdAndData = async () => {
@@ -69,23 +74,24 @@ export default function BookingScreen() {
   };
 
   const fetchServiceDetails = async (serviceId: string) => {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('Services')
-        .select('*')
+        .select('*, User_Business!inner(id)')
         .eq('id', serviceId)
         .single();
 
-      if (error) {
-        console.error('Error fetching service details:', error);
-      } else {
-        setService(data);
-      }
+      if (error) throw error;
+
+      setService({
+        ...data,
+        user_business_id: data.User_Business.id
+      });
     } catch (error) {
       console.error('Error fetching service details:', error);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
@@ -93,12 +99,37 @@ export default function BookingScreen() {
     setSelectedVehicle(vehicle);
   };
 
-  const handleBookAppointment = () => {
-    if (selectedVehicle && service) {
-      console.log('Booking appointment for:', { serviceId, vehicleId: selectedVehicle.id });
-      router.back(); // Navigate back after booking
+  const handleBookAppointment = async () => {
+    if (selectedVehicle && service && selectedDate && selectedTime) {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        if (!userId) throw new Error('User ID not found');
+
+        const { data, error } = await supabase
+          .from('booking')
+          .insert({
+            user_id: userId,
+            service_provider: service.user_business_id,
+            service_type: selectedVehicle.id,
+            service_category: service.category,
+            appointment_date: selectedDate,
+            appointment_time: selectedTime,
+            appointment_type: 'pending',
+            
+          })
+          .select();
+
+        if (error) throw error;
+
+        console.log('Booking created:', data);
+        Alert.alert('Success', 'Appointment booked successfully!');
+        router.back();
+      } catch (error) {
+        console.error('Error booking appointment:', error);
+        Alert.alert('Error', 'Failed to book appointment. Please try again.');
+      }
     } else {
-      alert('Please select a vehicle and service');
+      Alert.alert('Error', 'Please select a vehicle, service, date, and time');
     }
   };
 
@@ -148,12 +179,15 @@ export default function BookingScreen() {
           ))
         )}
 
-        <BookingSection />
+        <BookingSection
+          onDateSelect={(date) => setSelectedDate(date)}
+          onTimeSelect={(time) => setSelectedTime(time)}
+        />
 
         <TouchableOpacity
-          style={[styles.bookButton, (!selectedVehicle || !service) && styles.disabledButton]}
+          style={[styles.bookButton, (!selectedVehicle || !service || !selectedDate || !selectedTime) && styles.disabledButton]}
           onPress={handleBookAppointment}
-          disabled={!selectedVehicle || !service}
+          disabled={!selectedVehicle || !service || !selectedDate || !selectedTime}
         >
           <Text style={styles.bookButtonText}>Book Appointment</Text>
         </TouchableOpacity>
