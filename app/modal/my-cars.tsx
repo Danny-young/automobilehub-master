@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system'
+import { randomUUID } from 'expo-crypto';
+import { decode } from 'base64-arraybuffer';
+// import  RemoteImage  from '@/components/RemoteImage';
+import Defaultcarlogo from '@/assets/images/carconnect.jpg'
 
 type Car = {
   id: string;
-  name: string;
+  make: string;
   model: string;
   year: string;
   image_url?: string;
@@ -23,8 +28,11 @@ export default function MyCarsScreen() {
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
+  const [loading, setLoading] = useState<boolean>(true);
   const [image, setImage] = useState<string | null>(null);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
   const router = useRouter();
 
   useEffect(() => {
@@ -33,7 +41,7 @@ export default function MyCarsScreen() {
         const storedUserId = await AsyncStorage.getItem('userId');
         if (storedUserId) {
           setUserId(storedUserId);
-          fetchCars(storedUserId); // Fetch cars after userId is available
+          fetchCars(storedUserId);
         }
       } catch (error) {
         console.error('Failed to fetch userId from AsyncStorage:', error);
@@ -46,33 +54,31 @@ export default function MyCarsScreen() {
   }, []);
 
   const fetchCars = async (userId: string) => {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('vehicles')
         .select('*')
         .eq('owner', userId);
-  
-      if (error) {
-        console.error('Error fetching cars:', error);
-      } else {
-        // Convert the data to Car[] type
-        const carsData = data.map((car: any) => ({
-          id: car.id.toString(), // Convert number to string
-          name: car.name,
-          model: car.model,
-          year: car.year,
-          image_url: car.image_url
-        }));
-  
-        setCars(carsData || []);
-      }
+      
+      if (error) throw error;
+      
+      const carsData = data.map((car: any) => ({
+        id: car.id.toString(),
+        make: car.make || '',
+        model: car.model || '',
+        year: car.year ? new Date(car.year).getFullYear().toString() : '', // Extract just the year
+        image_url: car.image_url
+      }));
+      
+      setCars(carsData);
     } catch (error) {
       console.error('Error fetching cars:', error);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
+
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -86,88 +92,107 @@ export default function MyCarsScreen() {
     }
   };
 
-  const uploadImage = async (uri: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return undefined;
-  
-    const fileExt = uri.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
-  
-    let { error: uploadError } = await supabase.storage
-      .from('car-images')
-      .upload(filePath, {
-        uri: uri,
-        type: `image/${fileExt}`,
-        name: fileName,
+  const uploadImage = async (imageUri: string) => {
+    if (!imageUri.startsWith('file://')) {
+      console.error('Invalid image URI:', imageUri);
+      return null;
+    }
+
+    try {
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: 'base64',
       });
-  
-    if (uploadError) {
-      console.error('Error uploading image:', uploadError);
-      return undefined;
+      const filePath = `${randomUUID()}.png`;
+      const contentType = 'image/png';
+      const { data, error } = await supabase.storage
+        .from('owner_vehicle')
+        .upload(filePath, decode(base64), { contentType });
+
+      if (error) {
+        console.error('Supabase storage upload error:', error);
+        throw error;
+      }
+
+      if (data) {
+        const { data: publicUrlData } = supabase.storage
+          .from('owner_vehicle')
+          .getPublicUrl(data.path);
+        
+        return publicUrlData.publicUrl;
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Error', 'Failed to upload image. Please try again.');
+      return null;
     }
-  
-    const { data: { publicUrl }, error: urlError } = supabase.storage
-      .from('car-images')
-      .getPublicUrl(filePath);
-  
-    if (urlError) {
-      console.error('Error getting public URL:', urlError);
-      return undefined;
-    }
-  
-    return publicUrl.toString(); // Convert to string
   };
 
   const handleAddCar = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) throw new Error('User ID not found');
+      
       let imageUrl = null;
+      
       if (image) {
         imageUrl = await uploadImage(image);
       }
 
+      // Create a full date using the selected year
+      const fullDate = new Date(parseInt(year), 0, 1); // This sets the date to January 1st of the selected year
+      const formattedDate = fullDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+
       const { data, error } = await supabase
         .from('vehicles')
-        .insert({ user_id: user.id, make, model, year, image_url: imageUrl })
+        .insert({
+          owner: userId,  // Changed from user_id to owner
+          make,
+          model,
+          year: formattedDate, // Use the formatted date here
+          image_url: imageUrl
+        })
         .select();
-      if (error) console.error('Error adding car:', error);
-      else {
-        fetchCars(user.id);
-        setModalVisible(false);
-        resetForm();
-      }
+
+      if (error) throw error;
+      
+      await fetchCars(userId);
+      setModalVisible(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error adding car:', error);
+      Alert.alert('Error', error.message || 'Failed to add the car. Please try again.');
     }
   };
 
   const handleEditCar = async () => {
-    if (editingCar) {
-      let imageUrl = editingCar.image_url;
-      if (image && image !== editingCar.image_url) {
-        imageUrl  = await uploadImage(image);
-      }
+    try {
+      if (editingCar) {
+        let imageUrl = editingCar.image_url;
+        if (image && image !== editingCar.image_url) {
+          imageUrl = await uploadImage(image);
+        }
 
-      const { data, error } = await supabase
-        .from('vehicles')
-        .update({ make, model, year, image_url: imageUrl })
-        .eq('id', editingCar.id)
-        .select();
-      if (error) console.error('Error updating car:', error);
-      else {
-        fetchCars(userId!);
+        const { data, error } = await supabase
+          .from('vehicles')
+          .update({
+            make,
+            model,
+            year,
+            image_url: imageUrl,
+          })
+          .eq('id', editingCar.id)
+          .select();
+
+        if (error) throw error;
+
+        await fetchCars(userId!);
         setModalVisible(false);
         resetForm();
       }
+    } catch (error) {
+      console.error('Error editing car:', error);
+      Alert.alert('Error', 'Failed to update the car. Please try again.');
     }
-  };
-
-  const handleDeleteCar = async (id: string) => {
-    const { error } = await supabase
-      .from('vehicles')
-      .delete()
-      .eq('id', id);
-    if (error) console.error('Error deleting car:', error);
-    else fetchCars(userId!);
   };
 
   const resetForm = () => {
@@ -178,14 +203,57 @@ export default function MyCarsScreen() {
     setEditingCar(null);
   };
 
+
   const openAddModal = () => {
     resetForm();
     setModalVisible(true);
   };
 
+  const handleYearSelect = (selectedYear: number) => {
+    setYear(selectedYear.toString());
+    setShowYearPicker(false);
+  };
+
+  const handleDeleteCar = async (carId: string) => {
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this car?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Yes, Delete", 
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const { error } = await supabase
+                .from('vehicles')
+                .delete()
+                .eq('id', carId);
+
+              if (error) throw error;
+
+              // Immediately update the local state
+              setCars(prevCars => prevCars.filter(car => car.id !== carId));
+
+              Alert.alert('Success', 'Car deleted successfully');
+            } catch (error) {
+              console.error('Error deleting car:', error);
+              Alert.alert('Error', 'Failed to delete the car. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const openEditModal = (car: Car) => {
     setEditingCar(car);
-    setMake(car.name);
+    setMake(car.make);
     setModel(car.model);
     setYear(car.year);
     setImage(car.image_url || null);
@@ -215,10 +283,16 @@ export default function MyCarsScreen() {
           renderItem={({ item }) => (
             <View style={styles.carItem}>
               {item.image_url && (
+               /*  <RemoteImage
+                fallback={Defaultcarlogo}
+                path={item.image_url}
+                style={styles.carImage}
+                resizeMode="contain"
+              /> */
                 <Image source={{ uri: item.image_url }} style={styles.carImage} />
               )}
               <View style={styles.carInfo}>
-                <Text>{`${item.name} ${item.model}`}</Text>
+                <Text>{`${item.make} ${item.model} (${item.year})`}</Text>
                 <View style={styles.actionButtons}>
                   <TouchableOpacity onPress={() => openEditModal(item)}>
                     <Ionicons name="create-outline" size={24} color="blue" />
@@ -259,13 +333,12 @@ export default function MyCarsScreen() {
             value={model}
             onChangeText={setModel}
           />
-          <TextInput
+          <TouchableOpacity
             style={styles.input}
-            placeholder="Year"
-            value={year}
-            onChangeText={setYear}
-            keyboardType="numeric"
-          />
+            onPress={() => setShowYearPicker(true)}
+          >
+            <Text>{year || 'Select Year'}</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.button}
             onPress={editingCar ? handleEditCar : handleAddCar}
@@ -275,6 +348,32 @@ export default function MyCarsScreen() {
           <TouchableOpacity
             style={[styles.button, styles.cancelButton]}
             onPress={() => setModalVisible(false)}
+          >
+            <Text style={styles.buttonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showYearPicker}
+        onRequestClose={() => setShowYearPicker(false)}
+      >
+        <View style={styles.yearPickerModalView}>
+          <ScrollView style={styles.yearPickerScrollView}>
+            {years.map((y) => (
+              <TouchableOpacity
+                key={y}
+                style={styles.yearPickerItem}
+                onPress={() => handleYearSelect(y)}
+              >
+                <Text style={styles.yearPickerText}>{y}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <TouchableOpacity
+            style={[styles.button, styles.cancelButton]}
+            onPress={() => setShowYearPicker(false)}
           >
             <Text style={styles.buttonText}>Cancel</Text>
           </TouchableOpacity>
@@ -355,5 +454,25 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  yearPickerModalView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+  },
+  yearPickerScrollView: {
+    maxHeight: 300,
+    width: '100%',
+  },
+  yearPickerItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    alignItems: 'center',
+  },
+  yearPickerText: {
+    fontSize: 18,
   },
 });

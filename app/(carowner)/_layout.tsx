@@ -58,8 +58,8 @@ export default function CarOwnerLayout() {
       <Tabs.Screen
         name="wishlist"
         options={{
-          title: 'Wishlist',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="heart-outline" color={color} />,
+          title: 'Booking',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="reader-outline" color={color} />,
         }}
       />
       <Tabs.Screen

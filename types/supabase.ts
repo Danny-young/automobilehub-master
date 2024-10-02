@@ -722,7 +722,7 @@ export type Database = {
           image_url: string | null
           licence_plate: string | null
           model: string | null
-          name: string | null
+          make: string | null
           owner: string | null
           year: string | null
         }
@@ -733,7 +733,7 @@ export type Database = {
           image_url?: string | null
           licence_plate?: string | null
           model?: string | null
-          name?: string | null
+          make?: string | null
           owner?: string | null
           year?: string | null
         }
@@ -744,7 +744,7 @@ export type Database = {
           image_url?: string | null
           licence_plate?: string | null
           model?: string | null
-          name?: string | null
+          make?: string | null
           owner?: string | null
           year?: string | null
         }

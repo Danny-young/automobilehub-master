@@ -11,6 +11,7 @@ interface Appointment {
   appointment_date: string;
   appointment_time: string;
   appointment_type: string;
+  provider_name: string; // Add this line
 }
 
 const Wishlist = () => {
@@ -31,14 +32,22 @@ const Wishlist = () => {
 
       const { data, error } = await supabase
         .from('booking')
-        .select('*, User_Business(*)')
+        .select(`
+          *,
+          User_Business:service_provider (business_name)
+        `)
         .eq('user_id', userId)
         .order('appointment_date', { ascending: false });
 
       if (error) throw error;
 
-      const current = data.filter(app => ['pending', 'accepted'].includes(app.appointment_type));
-      const past = data.filter(app => app.appointment_type === 'completed');
+      const mappedData = data.map(item => ({
+        ...item,
+        provider_name: item.User_Business?.business_name || 'Unknown Provider'
+      }));
+
+      const current = mappedData.filter(app => ['pending', 'accepted'].includes(app.appointment_type));
+      const past = mappedData.filter(app => app.appointment_type === 'completed');
 
       setCurrentAppointments(current);
       setPastAppointments(past);
@@ -49,13 +58,31 @@ const Wishlist = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return '#FFA500'; // Orange
+      case 'accepted':
+        return '#4CAF50'; // Green
+      case 'completed':
+        return '#2196F3'; // Blue
+      default:
+        return '#9E9E9E'; // Grey
+    }
+  };
+
   const renderAppointmentItem = ({ item }: { item: Appointment }) => (
     <View style={styles.appointmentItem}>
-      <Text style={styles.appointmentText}>Service: {item.service_provider}</Text>
+      <Text style={styles.appointmentText}>Service Provider: {item.provider_name}</Text>
       <Text style={styles.appointmentText}>Category: {item.service_category}</Text>
       <Text style={styles.appointmentText}>Date: {item.appointment_date}</Text>
       <Text style={styles.appointmentText}>Time: {item.appointment_time}</Text>
-      <Text style={styles.appointmentText}>Status: {item.appointment_type}</Text>
+      <View style={styles.statusContainer}>
+        <Text style={styles.appointmentText}>Status: </Text>
+        <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(item.appointment_type) }]}>
+          <Text style={styles.statusText}>{item.appointment_type}</Text>
+        </View>
+      </View>
     </View>
   );
 
@@ -111,10 +138,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
+  appointmentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   appointmentText: {
     fontSize: 16,
     marginBottom: 5,
     color: Colors.dark,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusIndicator: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 5,
+  },
+  statusText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
   },
   noAppointmentsText: {
     fontSize: 16,

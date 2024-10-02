@@ -191,7 +191,7 @@ export default function AddItems() {
           });
         if (repairError) throw repairError;
       }
-      if (values.category === 'cleaning') {
+      if (values.category === 'Car Wash') {
         const { data: repairData, error: repairError } = await supabase
           .from('cleaning_and_detailing')
           .insert({
@@ -278,7 +278,7 @@ export default function AddItems() {
             {/* <TextInput style={styles.input} placeholder='Time Duration' value={values.timeDuration} onChangeText={handleChange('timeDuration')} /> */}
           </>
         );
-      case 'cleaning':
+      case 'Car Wash':
         return (
           <>
             <Picker
@@ -489,7 +489,7 @@ export default function AddItems() {
                 <Picker.Item label="Select service type" value="" />
                 <Picker.Item label="Maintenance Services" value="maintenance" />
                 <Picker.Item label="Repair Service" value="repair" />
-                <Picker.Item label="Cleaning and Detailing Services" value="cleaning" />
+                <Picker.Item label="Cleaning and Detailing Services" value="Car Wash" />
                 <Picker.Item label="Inspection Service" value="inspection" />
                 <Picker.Item label="Tire Service" value="tire" />
                 <Picker.Item label="Emergency Services" value="emergency" />
