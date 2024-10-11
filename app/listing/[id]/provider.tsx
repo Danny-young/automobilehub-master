@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase'; // Assuming you're using Supabase for data
-import { defaultPizzaImage } from '@/components/Listings/serviceItemList';
+import Defaultcarlogo from '@/assets/images/carconnect.jpg';
 import { useService } from '@/api/service_providers';
 import Colors from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,14 +46,29 @@ const ProviderInfo = () => {
   };
 
   return (
+    
     <View style={styles.container}>
+       {/* Stack.Header to set the dynamic title */}
+       <Stack.Screen
+        options={{
+          title: services?.User_Business?.business_name || 'Service Provider',
+          headerTitleAlign: 'center',
+          headerStyle: {
+           backgroundColor: Colors.primary, // Custom header style
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
       <View style={{position: 'absolute', zIndex:10, margin:15}}>
      
       </View>
 
       <View>
       <Image
-        source={{ uri: services.image || defaultPizzaImage }} // Add provider's image if available
+        source={services.image ? { uri: services.image } : Defaultcarlogo} // Add provider's image if available
         style={styles.image}
       />
 

@@ -34,6 +34,7 @@ export default function MyCarsScreen() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
   const router = useRouter();
+  
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -165,6 +166,9 @@ export default function MyCarsScreen() {
   };
 
   const handleEditCar = async () => {
+  const fullDate = new Date(parseInt(year), 0, 1); // This sets the date to January 1st of the selected year
+  const formattedDate = fullDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+
     try {
       if (editingCar) {
         let imageUrl = editingCar.image_url;
@@ -177,7 +181,7 @@ export default function MyCarsScreen() {
           .update({
             make,
             model,
-            year,
+            year:formattedDate,
             image_url: imageUrl,
           })
           .eq('id', editingCar.id)
@@ -471,8 +475,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     alignItems: 'center',
+    // color: 'white',
   },
   yearPickerText: {
     fontSize: 18,
+    color: 'white',
   },
 });

@@ -32,8 +32,11 @@ const ServiceItemList = ({ service }: ServiceListItemProps) => {
             </View>
           </View>
           <Text style={{ fontFamily: 'mon' }}>{service.User_Business?.business_name}</Text>
-          <View style={{ flexDirection: 'row', gap: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 4, justifyContent: 'space-between' }}>
             <Text style={{ fontFamily: 'mon-sb' }}>{service.User_Business?.address}</Text>
+            <View style={styles.category}>
+            <Text style={{ fontFamily: 'mon-sb', color: 'white' }}>{service.category}</Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -53,5 +56,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 350, // Set a fixed height to control image size
     borderRadius: 10,
+  },
+  category: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 5,
+    backgroundColor: '#2196F3',
   },
 });

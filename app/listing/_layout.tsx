@@ -16,7 +16,7 @@ export default function listingLayout() {
   
   return (
     <Stack>
-    {/* <Stack.Screen name="[id]" options={{ headerShown: false }} />           */}
+    <Stack.Screen name="[id]/index" options={{ headerShown: true, title:"" , headerTransparent: true,}} />          
     {/* <Stack.Screen name="[id]" options={{ headerShown: false }} />           */}
  
                

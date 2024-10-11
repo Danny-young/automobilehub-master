@@ -27,7 +27,7 @@ const categories = [
     icon: "car-wash"
   },
   {
-    name:"Car repairs",
+    name:"Repairs",
     icon: "car-wrench"
   },
   {
@@ -36,7 +36,7 @@ const categories = [
   },
   
   {
-    name:"Accessories",
+    name:"Sales & Part",
     icon: "car-battery"
   },
   {

@@ -145,7 +145,7 @@ export default function Wishlist() {
         .from('booking')
         .update({ 
           appointment_type: action === 'accept' ? 'accepted' : 'rejected',
-          updated_at: new Date().toISOString() // Add this line
+          //updated_at: new Date().toISOString() // Add this line
         })
         .eq('id', appointmentId);
 

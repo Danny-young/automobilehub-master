@@ -128,7 +128,7 @@ export default function AddItems() {
       const serviceId = serviceData[0].id;
   
       // Insert into category-specific tables based on the category
-      if (values.category === 'rental') {
+      if (values.category === 'Rental') {
         const { data: repairData, error: repairError } = await supabase
           .from('rental_service')
           .insert({
@@ -143,7 +143,7 @@ export default function AddItems() {
       
       // Similarly handle other categories (maintenance, cleaning, etc.)
       // Maintenance example:
-      if (values.category === 'maintenance') {
+      if (values.category === 'Mintenance') {
         const { data: maintenanceData, error: maintenanceError } = await supabase
           .from('maintenance_service')
           .insert({
@@ -155,7 +155,7 @@ export default function AddItems() {
         if (maintenanceError) throw maintenanceError;
       }
 
-      if (values.category === 'tire') {
+      if (values.category === 'Tire') {
         const { data: repairData, error: repairError } = await supabase
           .from('tire_services')
           .insert({
@@ -167,7 +167,7 @@ export default function AddItems() {
           });
         if (repairError) throw repairError;
       }
-      if (values.category === 'repair') {
+      if (values.category === 'Repairs') {
         const { data: repairData, error: repairError } = await supabase
           .from('repair_service')
           .insert({
@@ -179,7 +179,7 @@ export default function AddItems() {
           });
         if (repairError) throw repairError;
       }
-      if (values.category === 'sales') {
+      if (values.category === 'Sales & Part') {
         const { data: repairData, error: repairError } = await supabase
           .from('sales_and_parts')
           .insert({
@@ -204,7 +204,7 @@ export default function AddItems() {
         if (repairError) throw repairError;
       }
       
-      if (values.category === 'inspection') {
+      if (values.category === 'Inspection') {
         const { data: repairData, error: repairError } = await supabase
           .from('inspection_service')
           .insert({
@@ -216,7 +216,7 @@ export default function AddItems() {
           });
         if (repairError) throw repairError;
       }
-      if (values.category === 'emergency') {
+      if (values.category === 'Emergency') {
         const { data: repairData, error: repairError } = await supabase
           .from('emergency_service')
           .insert({
@@ -228,7 +228,7 @@ export default function AddItems() {
           });
         if (repairError) throw repairError;
       }
-      if (values.category === 'customization') {
+      if (values.category === 'Customization') {
         const { data: repairData, error: repairError } = await supabase
           .from('customization_and_performance')
           .insert({
@@ -239,7 +239,7 @@ export default function AddItems() {
           });
         if (repairError) throw repairError;
       }
-      if (values.category === 'miscellaneous') {
+      if (values.category === 'Miscellaneous') {
         const { data: repairData, error: repairError } = await supabase
           .from('miscellanous_service')
           .insert({
@@ -261,7 +261,7 @@ export default function AddItems() {
 
   const renderServiceFields = (values:any, handleChange:any, setFieldValue:any) => {
     switch (values.category) {
-      case 'maintenance':
+      case 'Maintenance':
         return (
           <>
             <TextInput style={styles.input} placeholder='Frequency' value={values.frequency} onChangeText={handleChange('frequency')} />
@@ -269,7 +269,7 @@ export default function AddItems() {
             <TextInput style={styles.input} placeholder='Required Parts' value={values.requiredParts} onChangeText={handleChange('requiredParts')} />
           </>
         );
-      case 'repair':
+      case 'Repairs':
         return (
           <>
             <TextInput style={styles.input} placeholder='Issue Type' value={values.issueType} onChangeText={handleChange('issueType')} />
@@ -296,7 +296,7 @@ export default function AddItems() {
             <TextInput style={styles.input} placeholder='Add-ons' value={values.addOns} onChangeText={handleChange('addOns')} />
           </>
         );
-      case 'inspection':
+      case 'Inspection':
         return (
           <>
             <TextInput style={styles.input} placeholder='Inspection Type' value={values.inspectionType} onChangeText={handleChange('inspectionType')} />
@@ -313,7 +313,7 @@ export default function AddItems() {
             </Picker>
           </>
         );
-      case 'tire':
+      case 'Tire':
         return (
           <>
             <TextInput style={styles.input} placeholder='Tire Type' value={values.tireType} onChangeText={handleChange('tireType')} />
@@ -322,7 +322,7 @@ export default function AddItems() {
             <TextInput style={styles.input} placeholder='Tire Brand' value={values.tireBrand} onChangeText={handleChange('tireBrand')} />
           </>
         );
-      case 'emergency':
+      case 'Emergency':
         return (
           <>
             <TextInput style={styles.input} placeholder='Emergency Type' value={values.emergencyType} onChangeText={handleChange('emergencyType')} />
@@ -338,7 +338,7 @@ export default function AddItems() {
             </Picker>
           </>
         );
-      case 'customization':
+      case 'Customization':
         return (
           <>
             <TextInput style={styles.input} placeholder='Customization Type' value={values.customizationType} onChangeText={handleChange('customizationType')} />
@@ -346,14 +346,14 @@ export default function AddItems() {
             
           </>
         );
-      case 'miscellaneous':
+      case 'Miscellaneous':
         return (
           <>
             <TextInput style={styles.input} placeholder='Service Category' value={values.serviceCategory} onChangeText={handleChange('serviceCategory')} />
             <TextInput style={styles.input} placeholder='Time Duration' value={values.timeDuration} onChangeText={handleChange('timeDuration')} />
           </>
         );
-      case 'sales':
+      case 'Sales & Part':
         return (
           <>
             <TextInput style={styles.input} placeholder='Part Name/Category' value={values.partName} onChangeText={handleChange('partName')} />
@@ -487,16 +487,16 @@ export default function AddItems() {
                 onValueChange={(itemValue) => setFieldValue('category', itemValue)}
               >
                 <Picker.Item label="Select service type" value="" />
-                <Picker.Item label="Maintenance Services" value="maintenance" />
-                <Picker.Item label="Repair Service" value="repair" />
+                <Picker.Item label="Maintenance Services" value="Maintenance" />
+                <Picker.Item label="Repair Service" value="Repairs" />
                 <Picker.Item label="Cleaning and Detailing Services" value="Car Wash" />
-                <Picker.Item label="Inspection Service" value="inspection" />
+                <Picker.Item label="Inspection Service" value="Inspection" />
                 <Picker.Item label="Tire Service" value="tire" />
-                <Picker.Item label="Emergency Services" value="emergency" />
-                <Picker.Item label="Customization and Performance Services" value="customization" />
-                <Picker.Item label="Miscellaneous Service" value="miscellaneous" />
-                <Picker.Item label="Sales and Parts" value="sales" />
-                <Picker.Item label="Rental" value="rental" />
+                <Picker.Item label="Emergency Services" value="Emergency" />
+                <Picker.Item label="Customization and Performance Services" value="Customization" />
+                <Picker.Item label="Miscellaneous Service" value="Miscellaneous" />
+                <Picker.Item label="Sales and Parts" value="Sales & Part" />
+                <Picker.Item label="Rental" value="Rental" />
               </Picker>
               {touched.category && errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
 
