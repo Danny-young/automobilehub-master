@@ -215,9 +215,9 @@ const ProviderInfo = () => {
 
       </View>
       <View style={styles.divider} />
-      <Text style={styles.details}>Email: {services.User_Business?.address}</Text>
-      <Text style={styles.details}>Phone: {services.User_Business?.telephone}</Text>
-      <Text style={styles.details}>Address: {services.User_Business?.provider_email}</Text>
+      <Text style={styles.details}>About: {services.User_Business?.description}</Text>
+      {/* <Text style={styles.details}>Phone: {services.User_Business?.telephone}</Text>
+      <Text style={styles.details}>Address: {services.User_Business?.provider_email}</Text> */}
       {/* <Text style={styles.details}>Website: {services.User_Business?.website}</Text> */}
      
 

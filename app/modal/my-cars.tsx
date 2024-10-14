@@ -445,6 +445,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     marginBottom: 10,
+    color: 'white',
   },
   button: {
     padding: 10,
