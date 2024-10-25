@@ -1,21 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, Alert, Image } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { defaultStyles } from '@/constants/Styles';
 import Header from '@/components/servicepage/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // Import the icon library
 
 interface Appointment {
   id: number;
   user_id: string;
   service_provider: string;
+  service_id: number;
+  vehicle_type: number;
   service_type: string;
   service_category: string;
   appointment_date: string;
   appointment_time: string;
   appointment_type: string;
   status: 'pending' | 'accepted' | 'rejected';
+}
+
+interface Service {
+  id: number;
+  name: string;
+  description: string;
+}
+
+interface Vehicle {
+  id: number;
+  make: string | null;
+  model: string | null;
+  year: string | null;
+  // Add other fields as needed
+  color: string | null;
+  licence_plate: string | null;
+  image_url: string | null;
+  owner: string | null;
+  created_at: string;
 }
 
 // Configure notifications
@@ -30,13 +53,18 @@ Notifications.setNotificationHandler({
 export default function Wishlist() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [serviceDetails, setServiceDetails] = useState<Service | null>(null);
+  const [vehicleDetails, setVehicleDetails] = useState<Vehicle | null>(null);
+
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ['25%', '50%', '75%'], []);
 
   useEffect(() => {
     registerForPushNotificationsAsync();
     const notificationListener = Notifications.addNotificationReceivedListener(handleNotification);
-    const intervalId = setInterval(checkForNewAppointments, 60000); // Check every minute
+    const intervalId = setInterval(checkForNewAppointments, 60000);
 
-    // Add this line to fetch appointments when the component mounts
     fetchAppointments();
 
     return () => {
@@ -96,7 +124,7 @@ export default function Wishlist() {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: 'New Booking Request!',
-              body: `You have a new booking request for ${latestAppointment.service_type}`,
+              body: `You have a new booking request for ${latestAppointment.service_category}`,
             },
             trigger: null,
           });
@@ -107,10 +135,14 @@ export default function Wishlist() {
       console.error('Error during check for new appointments:', error);
     }
   };
+  const renderBackdrop = useCallback(
+    (props: any) => <BottomSheetBackdrop appearsOnIndex={2} disappearsOnIndex={-1}{...props} />,
+     []
+  )
 
   const fetchAppointments = async () => {
     try {
-      setLoading(true); // Set loading to true before fetching
+      setLoading(true);
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
         throw new Error('User ID not found');
@@ -139,20 +171,68 @@ export default function Wishlist() {
     }
   };
 
+  const fetchServiceDetails = async (serviceId: number) => {
+    try {
+      const { data: servicedata, error } = await supabase
+        .from('Services') // Update this to the correct table name
+        .select('*')
+        .eq('id', serviceId)
+        .single();
+  
+      if (error) throw error;
+  
+      setServiceDetails(servicedata as Service);
+    } catch (error) {
+      console.error('Error fetching service details:', error);
+      setServiceDetails(null);
+    }
+  };
+
+  const fetchVehicleDetails = async (vehicleId: number) => {
+    try {
+      if (vehicleId === undefined) {
+        console.log('Vehicle ID is undefined, skipping fetch', vehicleId);
+        setVehicleDetails(null);
+        console.log("Vehicle id", vehicleId)
+        return;
+      }
+  
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select('*')
+        .eq('id', vehicleId)
+        .single();
+  
+      if (error) throw error;
+  
+      setVehicleDetails(data as Vehicle);
+    } catch (error) {
+      console.error('Error fetching vehicle details:', error);
+      setVehicleDetails(null);
+    }
+  };
+console.log("Vehicle Info", vehicleDetails)
+
+const openBottomSheet = (appointment: Appointment) => {
+  setSelectedAppointment(appointment);
+  fetchServiceDetails(appointment.service_id);
+  fetchVehicleDetails(appointment.vehicle_type);
+  bottomSheetRef.current?.expand();
+};
+
   const handleAppointmentAction = async (appointmentId: number, action: 'accept' | 'reject') => {
     try {
       const { error } = await supabase
         .from('booking')
         .update({ 
           appointment_type: action === 'accept' ? 'accepted' : 'rejected',
-          //updated_at: new Date().toISOString() // Add this line
         })
         .eq('id', appointmentId);
 
       if (error) throw error;
 
       Alert.alert('Success', `Appointment ${action}ed successfully`);
-      fetchAppointments(); // Refresh the appointments list
+      fetchAppointments();
     } catch (error) {
       console.error(`Error ${action}ing appointment:`, error);
       Alert.alert('Error', `Failed to ${action} appointment`);
@@ -167,16 +247,22 @@ export default function Wishlist() {
       <Text style={styles.appointmentText}>Type: {item.appointment_type}</Text>
       <View style={styles.appointmentActions}>
         <TouchableOpacity 
-          style={[styles.appointmentButton, styles.acceptButton]} 
-          onPress={() => handleAppointmentAction(item.id, 'accept')}
+          style={[styles.iconButton, styles.viewButton]} 
+          onPress={() => openBottomSheet(item)}
         >
-          <Text style={styles.appointmentButtonText}>Accept</Text>
+          <Icon name="visibility" size={24} color="white" />
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.appointmentButton, styles.rejectButton]} 
+          style={[styles.iconButton, styles.acceptButton]} 
+          onPress={() => handleAppointmentAction(item.id, 'accept')}
+        >
+          <Icon name="check-circle" size={24} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.iconButton, styles.rejectButton]} 
           onPress={() => handleAppointmentAction(item.id, 'reject')}
         >
-          <Text style={styles.appointmentButtonText}>Reject</Text>
+          <Icon name="cancel" size={24} color="white" />
         </TouchableOpacity>
       </View>
     </View>
@@ -197,6 +283,47 @@ export default function Wishlist() {
       ) : (
         <Text style={styles.noAppointmentsText}>No pending appointments</Text>
       )}
+
+      <BottomSheet
+        ref={bottomSheetRef}
+        snapPoints={snapPoints}
+        index={-1}
+        enablePanDownToClose={true}
+        backdropComponent={renderBackdrop}
+        //onChange={handleSheetChanges}
+      >
+        <BottomSheetView style={styles.contentContainer}>
+          {selectedAppointment && (
+            <View>
+              <Text style={styles.appointmentText}>Service ID: {selectedAppointment.id}</Text>
+              <Text style={styles.appointmentText}>Category: {selectedAppointment.service_category}</Text>
+              <Text style={styles.appointmentText}>Date: {selectedAppointment.appointment_date}</Text>
+              <Text style={styles.appointmentText}>Time: {selectedAppointment.appointment_time}</Text>
+              <Text style={styles.appointmentText}>Type: {selectedAppointment.appointment_type}</Text>
+              <Text style={styles.appointmentText}>Status: {selectedAppointment.status}</Text>
+              {serviceDetails && (
+                <>
+                  <Text style={styles.appointmentText}>Service Name: {serviceDetails.name}</Text>
+                  <Text style={styles.appointmentText}>Service Description: {serviceDetails.description}</Text>
+                </>
+              )}
+              {vehicleDetails && (
+                <>
+                  <Text style={styles.appointmentText}>Vehicle Make: {vehicleDetails.make}</Text>
+                  <Text style={styles.appointmentText}>Vehicle Model: {vehicleDetails.model}</Text>
+                  <Text style={styles.appointmentText}>Vehicle Year: {vehicleDetails.year}</Text>
+                  {vehicleDetails.image_url && (
+                    <Image
+                      source={{ uri: vehicleDetails.image_url }}
+                      style={styles.vehicleImage}
+                    />
+                  )}
+                </>
+              )}
+            </View>
+          )}
+        </BottomSheetView>
+      </BottomSheet>
     </View>
   );
 }
@@ -204,7 +331,8 @@ export default function Wishlist() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
   },
   appointmentItem: {
     backgroundColor: '#f0f0f0',
@@ -221,10 +349,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  appointmentButton: {
-    padding: 10,
+  iconButton: {
+    padding: 5,
     borderRadius: 5,
-    width: '48%',
+    width: '32%',
     alignItems: 'center',
   },
   acceptButton: {
@@ -233,14 +361,28 @@ const styles = StyleSheet.create({
   rejectButton: {
     backgroundColor: 'red',
   },
-  appointmentButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  viewButton: {
+    backgroundColor: 'blue',
   },
   noAppointmentsText: {
     fontSize: 16,
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 20,
+  },
+  bottomSheetContent: {
+    padding: 20,
+    backgroundColor: 'black',
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 36,
+    alignItems: 'center',
+  },
+  vehicleImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 8,
+    marginTop: 10,
   },
 });

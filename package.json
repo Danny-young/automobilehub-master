@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@gorhom/bottom-sheet": "5",
     "@react-native-async-storage/async-storage": "^2.0.0",
     "@react-native-picker/picker": "^2.8.0",
     "@react-native-voice/voice": "^3.2.4",

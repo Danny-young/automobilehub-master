@@ -75,6 +75,7 @@ export type Database = {
           created_at: string
           id: number
           service_category: string | null
+          service_id: number | null
           service_provider: string | null
           user_id: string | null
           vehicle_type: number | null
@@ -86,6 +87,7 @@ export type Database = {
           created_at?: string
           id?: number
           service_category?: string | null
+          service_id?: number | null
           service_provider?: string | null
           user_id?: string | null
           vehicle_type?: number | null
@@ -97,11 +99,19 @@ export type Database = {
           created_at?: string
           id?: number
           service_category?: string | null
+          service_id?: number | null
           service_provider?: string | null
           user_id?: string | null
           vehicle_type?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "booking_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "Services"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "booking_service_provider_fkey1"
             columns: ["service_provider"]
@@ -721,8 +731,8 @@ export type Database = {
           id: number
           image_url: string | null
           licence_plate: string | null
-          model: string | null
           make: string | null
+          model: string | null
           owner: string | null
           year: string | null
         }
@@ -732,8 +742,8 @@ export type Database = {
           id?: number
           image_url?: string | null
           licence_plate?: string | null
-          model?: string | null
           make?: string | null
+          model?: string | null
           owner?: string | null
           year?: string | null
         }
@@ -743,8 +753,8 @@ export type Database = {
           id?: number
           image_url?: string | null
           licence_plate?: string | null
-          model?: string | null
           make?: string | null
+          model?: string | null
           owner?: string | null
           year?: string | null
         }
@@ -867,4 +877,19 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

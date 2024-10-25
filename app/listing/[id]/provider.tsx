@@ -32,19 +32,65 @@ const ProviderInfo = () => {
   const openMaps = (latitude: number, longitude: number) => {
     const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
     const latLng = `${latitude},${longitude}`;
-    const label = 'Custom Label';
+    // const label = 'Custom Label';
+    const label = encodeURIComponent(services?.User_Business?.business_name || 'Business Location');
     const url = Platform.select({
       ios: `${scheme}${label}@${latLng}`,
       android: `${scheme}${latLng}(${label})`
     });
 
     if (url) {
-      Linking.openURL(url);
+      Linking.openURL(url).catch(err => console.error('An error occured', err));
     } else {
       Alert.alert('Error', 'Unable to open maps on this device');
     }
   };
 
+  const handleOpenMaps = () => {
+    const coordinates = services?.User_Business?.coordinates; // Assuming coordinates are available in the database
+    if (coordinates) {
+      let latitude, longitude;
+      if (typeof coordinates === 'string') {
+        try {
+          const [lat, long] = coordinates.split(',').map(Number);
+          if(!isNaN(lat) && !isNaN(long)) {
+            latitude = lat;
+            longitude = long;
+        } else {
+          throw new Error('Invalid coordinates format ')
+        }
+      } catch (err) {
+        console.error('Error parsing coordinates:', err);
+        Alert.alert('Error', 'Invalid coordinates format');
+        return;    
+      }
+    } else if (typeof coordinates === 'object' && coordinates !== null) {
+      if ('latitude' in coordinates && 'longitude' in coordinates) {
+        latitude = coordinates.latitude;
+        longitude = coordinates.longitude;
+      } else if ('latitude' in coordinates && 'longitude' in coordinates) {
+        latitude =  coordinates.latitude;
+        longitude = coordinates.longitude;
+      } else {
+        console.error('Invalid coordinates object structure');
+        Alert.alert('Error', 'Invalid coordinates format');
+        return;
+      }
+    } else {
+      console.error('Invalid coordinates format');
+      Alert.alert('Error', 'Invalid coordinates format');
+      return;
+    }
+
+    if (typeof latitude === 'number' && typeof longitude === 'number') {
+      openMaps(latitude, longitude);
+        } else {
+          Alert.alert('Error', 'Coordinates not available or invalid');
+        }
+      } else {
+        Alert.alert('Error', 'Coordinates not available');
+      }
+  }
   return (
     
     <View style={styles.container}>
@@ -135,45 +181,8 @@ const ProviderInfo = () => {
 
 <TouchableOpacity
   style={{ alignItems: 'center', justifyContent: 'center' }}
-  onPress={() => {
-    const coordinates = services.User_Business?.coordinates;
-    if (coordinates) {
-      let latitude, longitude;
-      if (typeof coordinates === 'string') {
-        try {
-          const parsedCoordinates = JSON.parse(coordinates);
-          latitude = parsedCoordinates.lat;
-          longitude = parsedCoordinates.long;
-        } catch (err) {
-          console.error('Error parsing coordinates:', err);
-          Alert.alert('Error', 'Invalid coordinates format');
-          return;
-        }
-      } else if (typeof coordinates === 'object' && coordinates !== null) {
-        // Check if coordinates is an object with lat and long properties
-        if ('lat' in coordinates && 'long' in coordinates) {
-          latitude = coordinates.lat;
-          longitude = coordinates.long;
-        } else {
-          console.error('Invalid coordinates object structure');
-          Alert.alert('Error', 'Invalid coordinates format');
-          return;
-        }
-      } else {
-        console.error('Unsupported coordinates format');
-        Alert.alert('Error', 'Unsupported coordinates format');
-        return;
-      }
-
-      if (typeof latitude === 'number' && typeof longitude === 'number') {
-        openMaps(latitude, longitude);
-      } else {
-        Alert.alert('Error', 'Coordinates not available or invalid');
-      }
-    } else {
-      Alert.alert('Error', 'Coordinates not available');
-    }
-  }}
+  // 
+  onPress={handleOpenMaps}
 >
   <View style={{ padding: 10, borderRadius: 99, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.lightGray }}>
     <Ionicons name="location-outline" size={25} color="blue" />

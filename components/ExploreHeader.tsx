@@ -1,11 +1,12 @@
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native'
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { Link } from 'expo-router';
 import { TabBarIcon } from './navigation/TabBarIcon';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
+import { supabase } from '@/lib/supabase';
 
 // Add this line to define the server address
 const serverAddress = Platform.select({
@@ -50,13 +51,21 @@ interface Props {
   onSearch: (query: string) => void;
 }
 
-const serviceInfo = [
-  'We sell engine oil and spare parts',
-  'Car light is 200gh',
-  'Cost of renting Benz is between 500gh to 700gh',
-  'We offer car wash services starting from 50gh',
-  'Our mechanics can diagnose and fix most car issues',
-];
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+}
+
+// const serviceInfo = [
+//   'We sell engine oil and spare parts',
+//   'Car light is 200gh',
+//   'Cost of renting Benz is between 500gh to 700gh',
+//   'We offer car wash services starting from 50gh',
+//   'Our mechanics can diagnose and fix most car issues',
+// ];
 
 const ExploreHeader = ({ onCategoryChanged, onSearch }: Props) => {
 const scrollRef = useRef<ScrollView>(null);
@@ -68,6 +77,37 @@ const scrollRef = useRef<ScrollView>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatResponse, setChatResponse] = useState('');
+  const [services, setServices] = useState<Service[]>([]);
+
+  useEffect(()=> {
+    fetchServices();
+
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      const {data, error } = await supabase
+        .from('Services')
+        .select('*');
+        if (error) {
+          throw new Error(error.message);
+        }
+        if (data) {
+          setServices(data);
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      }
+       
+  };
+
+
+
+
+
+
+
+
 
   const selectCategory = (index: number) => {
   const selected = itemRef.current[index];
@@ -178,22 +218,33 @@ const scrollRef = useRef<ScrollView>(null);
     }
   };
 
-  const handleAIChat = () => {
+  const handleAIChat = async () => {
     const lowercaseInput = chatInput.toLowerCase();
     let response = "I'm sorry, I don't have information about that. Can you ask something else?";
 
-    if (lowercaseInput.includes('engine') || lowercaseInput.includes('spare')) {
-      response = serviceInfo[0];
-    } else if (lowercaseInput.includes('light')) {
-      response = serviceInfo[1];
-    } else if (lowercaseInput.includes('benz') || lowercaseInput.includes('rent')) {
-      response = serviceInfo[2];
-    } else if (lowercaseInput.includes('wash')) {
-      response = serviceInfo[3];
-    } else if (lowercaseInput.includes('mechanic') || lowercaseInput.includes('fix')) {
-      response = serviceInfo[4];
-    }
+    // if (lowercaseInput.includes('engine') || lowercaseInput.includes('spare')) {
+    //   response = serviceInfo[0];
+    // } else if (lowercaseInput.includes('light')) {
+    //   response = serviceInfo[1];
+    // } else if (lowercaseInput.includes('benz') || lowercaseInput.includes('rent')) {
+    //   response = serviceInfo[2];
+    // } else if (lowercaseInput.includes('wash')) {
+    //   response = serviceInfo[3];
+    // } else if (lowercaseInput.includes('mechanic') || lowercaseInput.includes('fix')) {
+    //   response = serviceInfo[4];
+    // }
 
+    const matchingServices = services.filter((service) =>
+      service.name.toLowerCase().includes(lowercaseInput) ||
+      service.category.toLowerCase().includes(lowercaseInput) ||
+      service.description.toLowerCase().includes(lowercaseInput) || 
+      service.category.toLowerCase().includes(lowercaseInput)
+    );
+
+    if (matchingServices.length > 0 ) {
+      const service = matchingServices[0];
+      response = `${service.name} service: ${service.description}` + `  Category: ${service.category}`;
+    }
     setChatResponse(response);
     setChatInput('');
   };

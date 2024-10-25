@@ -32,6 +32,8 @@ import AuthProvider from '@/providers/AuthProvider'
     const router = useRouter();
     
     return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Your existing app content */}
               <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -44,6 +46,7 @@ import AuthProvider from '@/providers/AuthProvider'
   
             {/* <Stack.Screen name="+not-found" /> */}
           </Stack>
+    </GestureHandlerRootView>
          );
   };
   

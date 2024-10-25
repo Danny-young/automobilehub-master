@@ -7,11 +7,11 @@ import BookingSection from '@/components/BookAppointment/booking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Vehicle = {
-  id: string;
-  name: string;
-  model: string;
-  year: string;
-  image_url?: string; // Image URL for car
+  id: number;
+  make: string | null;
+  model: string | null;
+  year: string | null;
+  image_url?: string | null;// Image URL for car
 };
 
 type Service = {
@@ -21,20 +21,27 @@ type Service = {
   price: number;
   image_url?: string;
   category: string;
-  user_business_id: string;
-  owner_id: string;
-  provider_name: string; // Add this line
+  user_business_id: number | null;
+  owner?: string | number;
+  business_name: string | null;
+  provider_name: string | null; // Add this line
 };
 
 export default function BookingScreen() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+ // const [year, setYear] = useState('');
+  const [serviceBookedId, setServiceBookedId] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { serviceId } = useLocalSearchParams(); // Correctly extract serviceId
+ // const { serviceId } = useLocalSearchParams(); // Correctly extract serviceId
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [bookSlots, setBookSlots] = useState<{ [key:string]: string[] }>({});
+
+  const { serviceId: rawServiceId } = useLocalSearchParams();
+  const serviceId = Array.isArray(rawServiceId) ? rawServiceId[0] : rawServiceId;
 
   useEffect(() => {
     const fetchUserIdAndData = async () => {
@@ -42,15 +49,17 @@ export default function BookingScreen() {
         const storedUserId = await AsyncStorage.getItem('userId');
         if (storedUserId && serviceId) {
           fetchVehicles(storedUserId);
-          fetchServiceDetails(serviceId); // Now this should work correctly
-        }
+          fetchServiceDetails(serviceId);
+          fetchBookedSlots(serviceId);
+          serviceBookedId === serviceId && console.log('serviceBookedId', serviceBookedId);
+        } 
       } catch (error) {
         console.error('Failed to fetch userId from AsyncStorage:', error);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchUserIdAndData();
   }, [serviceId]);
 
@@ -73,7 +82,7 @@ export default function BookingScreen() {
       setLoading(false); // Stop loading
     }
   };
-
+  
   const fetchServiceDetails = async (serviceId: string) => {
     setLoading(true);
     try {
@@ -91,8 +100,8 @@ export default function BookingScreen() {
       setService({
         ...data,
         user_business_id: data.User_Business.id,
-        owner_id: data.User_Business.owner,
-        provider_name: data.User_Business.business_name // Use business_name instead of name
+        owner: data.User_Business.owner,
+        provider_name: data.User_Business.business_name
       });
     } catch (error) {
       console.error('Error fetching service details:', error);
@@ -101,6 +110,39 @@ export default function BookingScreen() {
     }
   };
 
+  const fetchBookedSlots = async (serviceId: string) => 
+  {
+    try {
+      const { data, error } = await supabase
+  .from('booking')
+  .select('appointment_date, appointment_time')
+  .eq('service_id', serviceId)
+  .gte('appointment_date', new Date().toISOString().split('T')[0])
+  .not('appointment_date', 'is', null);
+
+      
+      if(error) throw error;
+      const slots: { [key: string]: string[] } = {};
+
+      data.forEach(booking => {
+        if (booking.appointment_date) {
+          if (!slots[booking.appointment_date]) {
+            slots[booking.appointment_date] = [];
+          }
+          if (slots[booking.appointment_date].length < 2 && booking.appointment_time) {
+            slots[booking.appointment_date].push(booking.appointment_time);
+          }
+        
+        }
+      });
+      setBookSlots(slots);
+    } catch (error) {
+      console.error('Error fetching booked slots:', error);
+    }
+  
+  }
+  // const fullDate = new Date(parseInt(year), 0, 1); // This sets the date to January 1st of the selected year
+  //     const formattedDate = fullDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   const handleVehicleSelect = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
   };
@@ -119,11 +161,29 @@ export default function BookingScreen() {
         const userId = await AsyncStorage.getItem('userId');
         if (!userId) throw new Error('User ID not found');
 
+        // Check existing bookings for the same service, date, and time
+
+        const { data: existingBookings, error:fetchError } = await supabase 
+        .from('booking')
+        .select('id')
+        .eq('service_category', service.category)
+        .eq('appointment_date', selectedDate)
+        .eq('appointment_time', selectedTime);
+        
+        if (fetchError) throw fetchError;
+
+        if (existingBookings && existingBookings.length > 0) {
+          Alert.alert('Already Booked', 'This time is already booked. Please choose another time.');
+          return;
+        }
+        
+
         const { data, error } = await supabase
           .from('booking')
           .insert({
             user_id: userId,
-            service_provider: service.owner_id,
+            service_provider: service.owner,
+            service_id: serviceId,
             vehicle_type: selectedVehicle.id,
             service_category: service.category,
             appointment_date: selectedDate,
@@ -188,7 +248,7 @@ export default function BookingScreen() {
                 <Image source={{ uri: vehicle.image_url }} style={styles.carImage} />
               )}
               <View style={styles.carDetails}>
-                <Text style={styles.carText}>{`${vehicle.year} ${vehicle.name} ${vehicle.model}`}</Text>
+                <Text style={styles.carText}>{`${vehicle.year} ${vehicle.make} ${vehicle.model}`}</Text>
               </View>
             </TouchableOpacity>
           ))
