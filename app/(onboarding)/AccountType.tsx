@@ -14,7 +14,7 @@ const AccountType = () => {
     if (type === 'Service_Provider') {
        router.push('/(onboarding)/BusinessInfo');
     } else if (type === 'Car_Owner') {
-       router.push('/(carowner)/');
+       router.push('/(onboarding)/CarInfo');
     }
   };
 

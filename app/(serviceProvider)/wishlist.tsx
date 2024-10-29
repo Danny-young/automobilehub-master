@@ -41,6 +41,15 @@ interface Vehicle {
   created_at: string;
 }
 
+interface User {
+  id: string;
+  address: string | null;
+  email: string | null;
+  name: string | null;
+  phone_number: string | null;
+  profileImage: string | null;
+  }
+
 // Configure notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -56,6 +65,7 @@ export default function Wishlist() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [serviceDetails, setServiceDetails] = useState<Service | null>(null);
   const [vehicleDetails, setVehicleDetails] = useState<Vehicle | null>(null);
+  const [userDetails, setUserDetails] = useState<User | null>(null);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['25%', '50%', '75%'], []);
@@ -213,10 +223,37 @@ export default function Wishlist() {
   };
 console.log("Vehicle Info", vehicleDetails)
 
+
+  const fetchUserDetails = async (userId: number) => {
+    try {
+      if (userId === undefined) {
+        console.log('User ID is undefined, skipping fetch', userId);
+        setVehicleDetails(null);
+        //console.log("Vehicle id", vehicleId)
+        return;
+      }
+  
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+  
+      if (error) throw error;
+  
+      setUserDetails(data as User);
+    } catch (error) {
+      console.error('Error fetching vehicle details:', error);
+      setUserDetails(null);
+    }
+  };
+console.log("Vehicle Info", vehicleDetails)
+
 const openBottomSheet = (appointment: Appointment) => {
   setSelectedAppointment(appointment);
   fetchServiceDetails(appointment.service_id);
   fetchVehicleDetails(appointment.vehicle_type);
+  fetchUserDetails(appointment.user_id);
   bottomSheetRef.current?.expand();
 };
 
@@ -295,6 +332,14 @@ const openBottomSheet = (appointment: Appointment) => {
         <BottomSheetView style={styles.contentContainer}>
           {selectedAppointment && (
             <View>
+               {userDetails && (
+                <>
+                  <Text style={styles.appointmentText}>User Name: {userDetails.name}</Text>
+                  <Text style={styles.appointmentText}>Telephone No:: {userDetails.phone_number}</Text>
+                  <Text style={styles.appointmentText}>Service Description: {userDetails.email}</Text>
+                </>
+              )}
+
               <Text style={styles.appointmentText}>Service ID: {selectedAppointment.id}</Text>
               <Text style={styles.appointmentText}>Category: {selectedAppointment.service_category}</Text>
               <Text style={styles.appointmentText}>Date: {selectedAppointment.appointment_date}</Text>

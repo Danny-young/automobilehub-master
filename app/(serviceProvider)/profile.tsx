@@ -152,7 +152,7 @@ const Profile = () => {
               <Text style={styles.actionButtonText}>Edit Profile</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/myServices')}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('#'/* '/myService') */)}>
             <Text style={styles.actionButtonText}>My Services</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.logoutButton]} onPress={handleLogout}>
